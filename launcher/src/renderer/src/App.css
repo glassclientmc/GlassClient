@@ -67,18 +67,11 @@
 }
 
 .logo {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 20px;
-  color: #0a0c13;
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
   margin-bottom: 22px;
-  box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 45%, transparent);
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 55%, transparent));
 }
 
 .nav-item {

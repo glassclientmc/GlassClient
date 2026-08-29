@@ -21,6 +21,7 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     backgroundColor: '#0b0e14',
+    icon: join(__dirname, `../../build/icon.${process.platform === 'win32' ? 'ico' : 'png'}`),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false

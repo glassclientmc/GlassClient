@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
+import logo from './assets/logo.png'
 
 type DeviceCodePrompt = {
   userCode: string
@@ -108,7 +109,7 @@ function App(): React.JSX.Element {
       <div className="ambient-glow glow-b" />
 
       <aside className="sidebar">
-        <div className="logo">G</div>
+        <img className="logo" src={logo} alt="GlassClient" />
         <button className="nav-item active" title="Home">
           ⌂
         </button>

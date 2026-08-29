@@ -1,21 +1,21 @@
 :root {
   color-scheme: dark;
 
-  --bg-base: #0a0c13;
-  --glow-1: #3fd1c9;
-  --glow-2: #7c5cff;
+  --bg-base: #0a0e15;
+  --glow-1: #6cc8f0;
+  --glow-2: #3d6fc4;
 
-  --glass-panel: rgba(22, 25, 35, 0.55);
-  --glass-panel-strong: rgba(16, 18, 27, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.09);
-  --glass-highlight: rgba(255, 255, 255, 0.06);
+  --glass-panel: rgba(20, 27, 38, 0.55);
+  --glass-panel-strong: rgba(14, 20, 30, 0.72);
+  --glass-border: rgba(180, 220, 250, 0.12);
+  --glass-highlight: rgba(180, 220, 250, 0.08);
 
-  --text: #eef1f7;
-  --text-dim: #9aa3b7;
-  --text-faint: #626b80;
+  --text: #eef4fa;
+  --text-dim: #93a7bd;
+  --text-faint: #5c6d80;
 
-  --accent: #4fe3cf;
-  --accent-2: #8c6bff;
+  --accent: #8ed9f5;
+  --accent-2: #4f7fe0;
   --danger: #ff6b7a;
 
   --radius-xl: 24px;
