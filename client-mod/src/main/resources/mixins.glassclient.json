@@ -1,0 +1,9 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.glassclient.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "mixins.glassclient.refmap.json",
+  "client": [],
+  "mixins": []
+}

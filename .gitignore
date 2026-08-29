@@ -1,0 +1,18 @@
+# Java / Gradle
+client-mod/build/
+client-mod/.gradle/
+client-mod/libs/
+*.class
+
+# Electron / Node
+launcher/node_modules/
+launcher/out/
+launcher/dist/
+
+# Secrets / local env
+.env
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
