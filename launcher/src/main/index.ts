@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'node:path'
 import { signInWithMicrosoft, type DeviceCodePrompt } from './services/msAuth'
