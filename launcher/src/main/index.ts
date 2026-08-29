@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { signInWithMicrosoft, type DeviceCodePrompt, type MinecraftSession } from './services/msAuth'
 import { fetchVersionManifest, fetchVersionDetail, type VersionDetail } from './services/mojangApi'
 import { downloadVersion, type DownloadProgress, type GameFiles } from './services/gameFiles'
-import { buildLaunchArgs, launchGame } from './services/launch'
+import { buildLaunchArgs, launchGame, resolveJavaPath } from './services/launch'
 
 const gameDir = join(app.getPath('userData'), 'minecraft')
 
@@ -65,12 +65,9 @@ function createWindow(): void {
     const entry = downloadedVersions.get(versionId)
     if (!entry) throw new Error('Version not downloaded yet.')
 
-    const args = buildLaunchArgs(entry.detail, entry.files, currentSession, {
-      gameDir,
-      javaPath: 'java',
-      maxMemoryMb: 4096
-    })
-    const child = launchGame(args, { gameDir, javaPath: 'java', maxMemoryMb: 4096 })
+    const launchOptions = { gameDir, javaPath: resolveJavaPath(), maxMemoryMb: 4096 }
+    const args = buildLaunchArgs(entry.detail, entry.files, currentSession, launchOptions)
+    const child = launchGame(args, launchOptions)
 
     child.stdout?.on('data', (data: Buffer) => event.sender.send('game:log', data.toString()))
     child.stderr?.on('data', (data: Buffer) => event.sender.send('game:log', data.toString()))

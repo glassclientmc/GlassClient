@@ -1,7 +1,20 @@
 import { spawn, type ChildProcess } from 'node:child_process'
+import { join } from 'node:path'
 import type { VersionDetail } from './mojangApi'
 import type { GameFiles } from './gameFiles'
 import type { MinecraftSession } from './msAuth'
+
+/**
+ * Prefers JAVA_HOME when set, rather than trusting whatever `java` an
+ * older install may have put first on PATH (bitten by exactly this during
+ * development — an old bundled JRE was shadowing a freshly installed JDK
+ * until the shell/session restarted).
+ */
+export function resolveJavaPath(): string {
+  const home = process.env.JAVA_HOME
+  if (!home) return 'java'
+  return join(home, 'bin', process.platform === 'win32' ? 'java.exe' : 'java')
+}
 
 export interface LaunchOptions {
   gameDir: string
