@@ -27,17 +27,21 @@ export interface DownloadArtifact {
   sha1: string
   size: number
   url: string
+  /** Relative path under the libraries dir — present on library artifacts, absent on the client jar. */
+  path?: string
+}
+
+export interface LibraryEntry {
+  name: string
+  downloads?: { artifact?: DownloadArtifact }
+  rules?: Array<{ action: 'allow' | 'disallow'; os?: { name?: string } }>
 }
 
 export interface VersionDetail {
   id: string
   mainClass: string
   downloads: { client: DownloadArtifact }
-  libraries: Array<{
-    name: string
-    downloads?: { artifact?: DownloadArtifact }
-    rules?: Array<{ action: 'allow' | 'disallow'; os?: { name?: string } }>
-  }>
+  libraries: LibraryEntry[]
   assetIndex: { id: string; url: string; sha1: string }
 }
 

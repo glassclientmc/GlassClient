@@ -25,17 +25,23 @@ for the policy this project is actually held to.
   for what's needed to actually build it.
 - Public repo: [github.com/glassclientmc/GlassClient](https://github.com/glassclientmc/GlassClient)
 
+Also built while waiting on the approval above: the download-and-launch
+pipeline (`gameFiles.ts` downloads the client jar + applicable libraries +
+all assets with SHA1 verification and concurrency; `launch.ts` builds the
+JVM args and spawns the game) and a full glassmorphic UI redesign (version
+picker, Play button, live download progress, log console). Untested against
+a real launch yet — needs both the pending Mojang approval and a JDK 21 install
+(this machine only has Java 8) to actually run Minecraft end to end.
+
 ## Next steps
 
 1. **Waiting on Mojang/Microsoft's app approval** (see above) — once that
    comes through, `npm run dev` in `launcher/` should complete a real
    sign-in and show your Minecraft profile.
-2. While waiting: implement the actual download-and-launch step (fetch
-   version detail, download client jar + libraries + assets, verify hashes,
-   spawn the JVM) — this is the next real milestone and doesn't depend on
-   the pending approval.
-3. Separately, whenever you're ready to start on `client-mod`: install
-   **JDK 21** (this machine only has Java 8) and Gradle.
+2. Install **JDK 21** (this machine only has Java 8) so an actual `Play`
+   click can be tested end to end once auth is unblocked.
+3. Separately, whenever you're ready to start on `client-mod`: same JDK 21
+   requirement, plus Gradle.
 
 ## Repo layout
 

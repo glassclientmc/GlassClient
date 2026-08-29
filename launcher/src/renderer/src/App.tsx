@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
 type DeviceCodePrompt = {
@@ -13,84 +13,225 @@ type MinecraftSession = {
   profile: { id: string; name: string }
 }
 
-type Status = 'idle' | 'awaiting-code' | 'signing-in' | 'signed-in' | 'error'
+type VersionSummary = { id: string; type: 'release' | 'snapshot' | 'old_beta' | 'old_alpha'; releaseTime: string }
+type VersionManifest = { latest: { release: string; snapshot: string }; versions: VersionSummary[] }
+
+type DownloadProgress = { phase: 'client' | 'libraries' | 'assets'; completed: number; total: number; currentFile: string }
+
+type AuthStatus = 'idle' | 'awaiting-code' | 'signing-in' | 'signed-in' | 'error'
+type PlayStatus = 'idle' | 'downloading' | 'launching' | 'running' | 'error'
+
+const phaseLabel: Record<DownloadProgress['phase'], string> = {
+  client: 'Downloading client',
+  libraries: 'Downloading libraries',
+  assets: 'Downloading assets'
+}
 
 function App(): React.JSX.Element {
-  const [status, setStatus] = useState<Status>('idle')
+  const [authStatus, setAuthStatus] = useState<AuthStatus>('idle')
   const [prompt, setPrompt] = useState<DeviceCodePrompt | null>(null)
   const [session, setSession] = useState<MinecraftSession | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [releaseCount, setReleaseCount] = useState<number | null>(null)
+  const [authError, setAuthError] = useState<string | null>(null)
+
+  const [manifest, setManifest] = useState<VersionManifest | null>(null)
+  const [selectedVersion, setSelectedVersion] = useState<string>('')
+
+  const [playStatus, setPlayStatus] = useState<PlayStatus>('idle')
+  const [progress, setProgress] = useState<DownloadProgress | null>(null)
+  const [playError, setPlayError] = useState<string | null>(null)
+  const [log, setLog] = useState<string[]>([])
+
+  const releaseVersions = useMemo(
+    () => manifest?.versions.filter((v) => v.type === 'release').slice(0, 30) ?? [],
+    [manifest]
+  )
 
   useEffect(() => {
     return window.api.onDeviceCodePrompt((p) => {
       setPrompt(p)
-      setStatus('awaiting-code')
+      setAuthStatus('awaiting-code')
     })
   }, [])
 
+  useEffect(() => {
+    return window.api.onDownloadProgress(setProgress)
+  }, [])
+
+  useEffect(() => {
+    return window.api.onGameLog((line) => setLog((prev) => [...prev.slice(-200), line]))
+  }, [])
+
+  useEffect(() => {
+    return window.api.onGameExit(() => setPlayStatus('idle'))
+  }, [])
+
   async function handleSignIn(): Promise<void> {
-    setError(null)
-    setStatus('signing-in')
+    setAuthError(null)
+    setAuthStatus('signing-in')
     try {
       const result = await window.api.signIn()
       setSession(result)
-      setStatus('signed-in')
+      setAuthStatus('signed-in')
 
-      const manifest = await window.api.listVersions()
-      setReleaseCount(manifest.versions.filter((v) => v.type === 'release').length)
+      const list = await window.api.listVersions()
+      setManifest(list)
+      setSelectedVersion(list.latest.release)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-      setStatus('error')
+      setAuthError(err instanceof Error ? err.message : String(err))
+      setAuthStatus('error')
     }
   }
 
+  async function handlePlay(): Promise<void> {
+    if (!selectedVersion) return
+    setPlayError(null)
+    setLog([])
+    try {
+      setPlayStatus('downloading')
+      await window.api.downloadVersion(selectedVersion)
+      setProgress(null)
+
+      setPlayStatus('launching')
+      await window.api.launchGame(selectedVersion)
+      setPlayStatus('running')
+    } catch (err) {
+      setPlayError(err instanceof Error ? err.message : String(err))
+      setPlayStatus('error')
+    }
+  }
+
+  const avatarUrl = session ? `https://crafatar.com/avatars/${session.profile.id}?size=64&overlay` : null
+
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>GlassClient</h1>
-        <p className="tagline">A Minecraft launcher that doesn't sell you.</p>
-      </header>
+    <div className="shell">
+      <div className="ambient-glow glow-a" />
+      <div className="ambient-glow glow-b" />
 
-      {status === 'idle' && (
-        <button className="primary" onClick={handleSignIn}>
-          Sign in with Microsoft
+      <aside className="sidebar">
+        <div className="logo">G</div>
+        <button className="nav-item active" title="Home">
+          ⌂
         </button>
-      )}
+        <button className="nav-item" disabled title="Mods (coming soon)">
+          ◆
+        </button>
+        <button className="nav-item" disabled title="Cosmetics (coming soon)">
+          ✦
+        </button>
+        <button className="nav-item" disabled title="Settings (coming soon)">
+          ⚙
+        </button>
+      </aside>
 
-      {status === 'awaiting-code' && prompt && (
-        <div className="device-code">
-          <p>{prompt.message}</p>
-          <p className="code">{prompt.userCode}</p>
-          <button onClick={() => window.open(prompt.verificationUri)}>
-            Open {prompt.verificationUri}
-          </button>
-        </div>
-      )}
-
-      {status === 'signing-in' && !prompt && <p>Starting sign-in…</p>}
-
-      {status === 'signed-in' && session && (
-        <div className="profile">
-          <p>
-            Signed in as <strong>{session.profile.name}</strong>
-          </p>
-          {releaseCount !== null && (
-            <p className="muted">{releaseCount} release versions available.</p>
+      <div className="main">
+        <header className="topbar">
+          <div className="brand">
+            <strong>GlassClient</strong>
+          </div>
+          {session && avatarUrl && (
+            <div className="profile-chip">
+              <img src={avatarUrl} alt="" />
+              <span>{session.profile.name}</span>
+            </div>
           )}
-        </div>
-      )}
+        </header>
 
-      {status === 'error' && error && (
-        <div className="error">
-          <p>{error}</p>
-          <button onClick={() => setStatus('idle')}>Try again</button>
-        </div>
-      )}
+        <div className="stage">
+          <div className="hero-card">
+            {authStatus === 'idle' && (
+              <>
+                <h1 className="hero-title">Welcome</h1>
+                <p className="hero-sub">Sign in with the Microsoft account that owns Minecraft.</p>
+                <button className="btn btn-primary" onClick={handleSignIn}>
+                  Sign in with Microsoft
+                </button>
+              </>
+            )}
 
-      <footer className="app-footer">
-        <p className="muted">No analytics. No ads. No data sold, ever.</p>
-      </footer>
+            {authStatus === 'awaiting-code' && prompt && (
+              <>
+                <h1 className="hero-title">Enter this code</h1>
+                <p className="hero-sub">{prompt.message}</p>
+                <div className="device-code-value">{prompt.userCode}</div>
+                <button className="btn btn-ghost" onClick={() => window.open(prompt.verificationUri)}>
+                  Open {prompt.verificationUri}
+                </button>
+              </>
+            )}
+
+            {authStatus === 'signing-in' && !prompt && (
+              <>
+                <h1 className="hero-title">Starting sign-in…</h1>
+              </>
+            )}
+
+            {authStatus === 'error' && authError && (
+              <>
+                <h1 className="hero-title">Sign-in failed</h1>
+                <div className="error-banner">{authError}</div>
+                <button className="btn btn-ghost" onClick={() => setAuthStatus('idle')}>
+                  Try again
+                </button>
+              </>
+            )}
+
+            {authStatus === 'signed-in' && session && (
+              <>
+                <h1 className="hero-title">Ready to play</h1>
+                <p className="hero-sub">Signed in as {session.profile.name}</p>
+
+                {playStatus === 'error' && playError && <div className="error-banner">{playError}</div>}
+
+                <select
+                  className="version-select"
+                  value={selectedVersion}
+                  disabled={playStatus === 'downloading' || playStatus === 'launching'}
+                  onChange={(e) => setSelectedVersion(e.target.value)}
+                >
+                  {releaseVersions.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.id}
+                      {v.id === manifest?.latest.release ? ' (latest)' : ''}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  className="btn btn-primary"
+                  onClick={handlePlay}
+                  disabled={playStatus === 'downloading' || playStatus === 'launching' || playStatus === 'running'}
+                >
+                  {playStatus === 'downloading' && 'Downloading…'}
+                  {playStatus === 'launching' && 'Launching…'}
+                  {playStatus === 'running' && 'Running'}
+                  {(playStatus === 'idle' || playStatus === 'error') && 'Play'}
+                </button>
+
+                {playStatus === 'downloading' && progress && (
+                  <>
+                    <div className="progress-track">
+                      <div
+                        className="progress-fill"
+                        style={{ width: `${progress.total ? (progress.completed / progress.total) * 100 : 0}%` }}
+                      />
+                    </div>
+                    <div className="progress-label">
+                      <span>
+                        {phaseLabel[progress.phase]} ({progress.completed}/{progress.total})
+                      </span>
+                      <span>{progress.currentFile}</span>
+                    </div>
+                  </>
+                )}
+
+                {log.length > 0 && <div className="log-console">{log.join('')}</div>}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <p className="footer-note">No analytics. No ads. No data sold, ever.</p>
     </div>
   )
 }
