@@ -2,8 +2,10 @@
 
 A Minecraft launcher + client-side mod suite in the spirit of Lunar Client
 (FPS boost, HUD, cosmetics, PvP utilities) with one hard rule: **no telemetry,
-no data sale, no ads.** Whatever analytics exist must be opt-in, minimal, and
-disclosed.
+no data sale.** Whatever analytics exist must be opt-in, minimal, and
+disclosed. A single small non-tracking banner ad (bottom of the launcher UI)
+is the one exception to an otherwise ad-free app — it doesn't collect or
+share user data, it's just a static ad placement for revenue.
 
 ## Why this is two separate hard projects, not one
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import logo from './assets/logo.png'
+import { HomeIcon, ModsIcon, CosmeticsIcon, SettingsIcon } from './icons'
 
 type DeviceCodePrompt = {
   userCode: string
@@ -111,16 +112,16 @@ function App(): React.JSX.Element {
       <aside className="sidebar">
         <img className="logo" src={logo} alt="GlassClient" />
         <button className="nav-item active" title="Home">
-          ⌂
+          <HomeIcon />
         </button>
         <button className="nav-item" disabled title="Mods (coming soon)">
-          ◆
+          <ModsIcon />
         </button>
         <button className="nav-item" disabled title="Cosmetics (coming soon)">
-          ✦
+          <CosmeticsIcon />
         </button>
         <button className="nav-item" disabled title="Settings (coming soon)">
-          ⚙
+          <SettingsIcon />
         </button>
       </aside>
 
@@ -231,8 +232,6 @@ function App(): React.JSX.Element {
           </div>
         </div>
       </div>
-
-      <p className="footer-note">No analytics. No ads. No data sold, ever.</p>
     </div>
   )
 }
