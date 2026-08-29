@@ -2,9 +2,9 @@
 
 A Minecraft launcher + client mod suite in the spirit of Lunar Client
 (FPS boost, HUD, cosmetics, PvP utilities) — with one hard rule: no
-telemetry, no data sale, no ads. See [ARCHITECTURE.md](ARCHITECTURE.md) for
-the full technical plan and [docs/privacy-policy.md](docs/privacy-policy.md)
-for the policy this project is actually held to.
+telemetry, no data sale. See [ARCHITECTURE.md](ARCHITECTURE.md) for the full
+technical plan and [docs/privacy-policy.md](docs/privacy-policy.md) for the
+policy this project is actually held to.
 
 ## Status
 

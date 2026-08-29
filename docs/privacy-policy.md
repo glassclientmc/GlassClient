@@ -6,8 +6,10 @@ once and drifts. Revisit it every time a feature touches user data.
 
 ## What we collect
 
-- **Nothing, by default.** No analytics SDK, no ad SDK, no crash reporter is
-  bundled or enabled out of the box.
+- **Nothing, by default.** No analytics SDK, no crash reporter is bundled or
+  enabled out of the box. The launcher shows one small static banner ad —
+  it isn't targeted, doesn't track you, and doesn't read anything about you
+  or your account to pick what it shows.
 - **Microsoft/Xbox/Minecraft auth tokens** — handled entirely between your
   device and Microsoft's/Mojang's own servers via the standard device-code
   OAuth flow. GlassClient's own servers (if any exist later, e.g. for a
@@ -20,7 +22,9 @@ once and drifts. Revisit it every time a feature touches user data.
 
 - Sell or share user data with third parties, for advertising or any other
   purpose.
-- Bundle third-party ad or tracking SDKs.
+- Show targeted/behavioral ads, or use an ad network that profiles you to
+  pick what you see. The one banner placement is static, not personalized.
+- Bundle third-party tracking SDKs.
 - Silently enable telemetry by default — anything added later must be
   opt-in, with a clear toggle, off until you turn it on.
 

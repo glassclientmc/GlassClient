@@ -63,9 +63,10 @@ Responsibilities:
 - **Mod/cosmetics UI** — toggle mods on/off, browse cosmetics (self-hosted,
   not sold data — a cosmetic store is a legitimate, privacy-safe revenue
   model if you want monetization later).
-- **Explicitly not included**: any analytics SDK, ad SDK, or third-party
-  tracking pixel. If we ever want crash reporting, it has to be self-hosted
-  and opt-in with a clear toggle.
+- **Explicitly not included**: any analytics SDK or third-party tracking
+  pixel. The one static banner ad placement doesn't count as tracking — it
+  doesn't collect or share user data. If we ever want crash reporting, it
+  has to be self-hosted and opt-in with a clear toggle.
 
 This is the part we can build and test right now without Minecraft-internals
 risk.
