@@ -77,11 +77,17 @@ Stack: Java 17/21 (matching modern Minecraft), Gradle, SpongePowered Mixin
 (standalone, not via Forge/Fabric — matches your choice to inject the way
 Lunar does).
 
-High-level pipeline:
-1. A Java agent (`-javaagent:glassclient.jar`) or a small bootstrap main
-   class attaches before Minecraft's main class runs.
+High-level pipeline (steps 1-2 built and boot cleanly as of 2026-08-29 —
+see [client-mod/README.md](client-mod/README.md) for the working setup and
+the one known blocker: bytecode transformation doesn't actually fire yet):
+1. A Java agent (`-javaagent:glassclient-mod-<version>-all.jar`) attaches
+   before Minecraft's main class runs. Since Forge/Fabric's bundled Mixin
+   service implementations don't work outside their own managed class
+   loading, this needed a custom `IMixinService` + `IGlobalPropertyService`
+   backed by the JVM's own `Instrumentation` API — real, working code now,
+   not a plan.
 2. `MixinBootstrap.init()` sets up the Mixin environment; we register our
-   `mixins.glassclient.json` config.
+   `mixins.glassclient.json` config. Confirmed working with zero errors.
 3. Mixins are written against **Mojang's official mappings** (published
    alongside each release since 1.14.4 — this is what makes it feasible to
    target vanilla directly without a full deobfuscation pipeline like older

@@ -19,10 +19,14 @@ policy this project is actually held to.
   2026-08-29 (client ID `71f42801-625c-45a5-8c21-4348ea488c4d`) — waiting to
   hear back. Everything downstream of that (profile fetch, version download,
   launch) is unaffected by this and can be built while waiting.
-- **`client-mod/`** — Java + Gradle + SpongePowered Mixin project. Written
-  but **unverified** — this machine had only Java 8 and no Gradle installed,
-  so nothing here has been compiled. See [client-mod/README.md](client-mod/README.md)
-  for what's needed to actually build it.
+- **`client-mod/`** — Java + Gradle + SpongePowered Mixin project. JDK 21 +
+  Gradle wrapper are now set up and the build genuinely works, including a
+  from-scratch custom `IMixinService` (Forge/Fabric's built-in ones don't
+  work standalone) that correctly boots with zero errors. **Blocked**: the
+  actual mixin bytecode transformation doesn't fire yet — a real, narrowed-
+  down bug, not a "haven't tried" gap. Full writeup, what's been ruled out,
+  and the leading suspect (with a link to the exact Mixin source in
+  question) are in [client-mod/README.md](client-mod/README.md).
 - Public repo: [github.com/glassclientmc/GlassClient](https://github.com/glassclientmc/GlassClient)
 
 Also built while waiting on the approval above: the download-and-launch
