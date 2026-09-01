@@ -10,15 +10,14 @@ policy this project is actually held to.
 
 - **`launcher/`** — Electron + React + TypeScript app. Builds cleanly
   (`npm run build` verified) and runs (`npm run dev` verified). Full
-  Microsoft device-code auth → Xbox Live → XSTS chain is implemented and
-  confirmed working end-to-end against the real APIs. Blocked on the very
-  last step: `api.minecraftservices.com/authentication/login_with_xbox`
-  returns 403 "Invalid app registration" for any newly created Azure app —
-  Microsoft requires manual approval for new apps to use the Minecraft API.
-  Submitted the approval request at `https://aka.ms/mce-reviewappid` on
-  2026-08-29 (client ID `71f42801-625c-45a5-8c21-4348ea488c4d`) — waiting to
-  hear back. Everything downstream of that (profile fetch, version download,
-  launch) is unaffected by this and can be built while waiting.
+  Microsoft device-code auth → Xbox Live → XSTS → Minecraft Services chain is
+  implemented and confirmed working end-to-end. Mojang's app approval
+  (client ID `71f42801-625c-45a5-8c21-4348ea488c4d`, requested 2026-08-29)
+  came through 2026-09-01 — `login_with_xbox` should now succeed for real.
+  Download pipeline separately verified against real Mojang servers (pulled
+  the actual client jar + 88 libraries for the latest release, all
+  hash-checked). Not yet confirmed: an actual real sign-in + launch through
+  the running app.
 - **`client-mod/`** — Java + Gradle + SpongePowered Mixin project. JDK 21 +
   Gradle wrapper are now set up and the build genuinely works, including a
   from-scratch custom `IMixinService` (Forge/Fabric's built-in ones don't
@@ -39,13 +38,15 @@ a real launch yet — needs both the pending Mojang approval and a JDK 21 instal
 
 ## Next steps
 
-1. **Waiting on Mojang/Microsoft's app approval** (see above) — once that
-   comes through, `npm run dev` in `launcher/` should complete a real
-   sign-in and show your Minecraft profile.
-2. Install **JDK 21** (this machine only has Java 8) so an actual `Play`
-   click can be tested end to end once auth is unblocked.
-3. Separately, whenever you're ready to start on `client-mod`: same JDK 21
-   requirement, plus Gradle.
+1. Run `npm run dev` in `launcher/` and click **Sign in with Microsoft** —
+   this should now complete for real and show a real Minecraft profile.
+2. Click **Play** and confirm vanilla Minecraft actually launches end to
+   end (download → JVM spawn → game window). No mods yet — that's what
+   `client-mod` is for, separately blocked (see below).
+3. `client-mod`: JDK 21 + Gradle bootstrap work correctly, but the actual
+   mixin bytecode transformation doesn't fire yet — see
+   [client-mod/README.md](client-mod/README.md) for the detailed writeup
+   and leading suspect.
 
 ## Repo layout
 
