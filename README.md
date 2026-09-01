@@ -8,18 +8,18 @@ policy this project is actually held to.
 
 ## Status
 
-- **`launcher/`** — Electron + React + TypeScript app. Builds cleanly
-  (`npm run build` verified) and runs (`npm run dev` verified). Full
-  Microsoft device-code auth → Xbox Live → XSTS → Minecraft Services chain is
-  implemented and confirmed working end-to-end. Mojang's app approval
-  (client ID `71f42801-625c-45a5-8c21-4348ea488c4d`, requested 2026-08-29)
-  came through 2026-09-01 — `login_with_xbox` should now succeed for real.
-  Download pipeline separately verified against real Mojang servers (pulled
-  the actual client jar + 88 libraries for the latest release, all
-  hash-checked). Not yet confirmed: an actual real sign-in + launch through
-  the running app.
+- **`launcher/` — fully working end to end, confirmed 2026-09-01.** Sign in
+  with Microsoft → Xbox Live → XSTS → Minecraft Services all succeed for
+  real (Mojang approved API access on 2026-09-01, ~3 days after request),
+  the download pipeline pulls and hash-verifies the real client jar +
+  libraries, and clicking Play actually spawns vanilla Minecraft and it
+  runs. This is the real, complete "launcher" half of the project. One
+  version-specific gotcha worth knowing: the latest Minecraft release
+  (26.2) needs **JDK 25**, not 21 — the launcher spawns whatever JDK
+  `JAVA_HOME` points at, so that needs to be current for whichever version
+  is selected.
 - **`client-mod/`** — Java + Gradle + SpongePowered Mixin project. JDK 21 +
-  Gradle wrapper are now set up and the build genuinely works, including a
+  Gradle wrapper are set up and the build genuinely works, including a
   from-scratch custom `IMixinService` (Forge/Fabric's built-in ones don't
   work standalone) that correctly boots with zero errors. **Blocked**: the
   actual mixin bytecode transformation doesn't fire yet — a real, narrowed-
@@ -28,25 +28,22 @@ policy this project is actually held to.
   question) are in [client-mod/README.md](client-mod/README.md).
 - Public repo: [github.com/glassclientmc/GlassClient](https://github.com/glassclientmc/GlassClient)
 
-Also built while waiting on the approval above: the download-and-launch
-pipeline (`gameFiles.ts` downloads the client jar + applicable libraries +
-all assets with SHA1 verification and concurrency; `launch.ts` builds the
-JVM args and spawns the game) and a full glassmorphic UI redesign (version
-picker, Play button, live download progress, log console). Untested against
-a real launch yet — needs both the pending Mojang approval and a JDK 21 install
-(this machine only has Java 8) to actually run Minecraft end to end.
-
 ## Next steps
 
-1. Run `npm run dev` in `launcher/` and click **Sign in with Microsoft** —
-   this should now complete for real and show a real Minecraft profile.
-2. Click **Play** and confirm vanilla Minecraft actually launches end to
-   end (download → JVM spawn → game window). No mods yet — that's what
-   `client-mod` is for, separately blocked (see below).
-3. `client-mod`: JDK 21 + Gradle bootstrap work correctly, but the actual
+1. `client-mod`: JDK 21 + Gradle bootstrap work correctly, but the actual
    mixin bytecode transformation doesn't fire yet — see
    [client-mod/README.md](client-mod/README.md) for the detailed writeup
-   and leading suspect.
+   and leading suspect. This is the next real blocker for adding any actual
+   FPS/HUD/cosmetics/PvP features.
+2. Once that's fixed: get `ExampleHudMixin` actually working against a real
+   Minecraft class (needs the Mojang-mapped compile-time jar, see
+   [client-mod/README.md](client-mod/README.md)), then wire the built mod
+   jar into `launch.ts`'s classpath/`-javaagent` args so Play actually loads
+   it.
+3. Consider auto-detecting/bundling the right JDK per Minecraft version
+   rather than relying on whatever `JAVA_HOME` happens to point at — right
+   now switching between Minecraft versions with different Java
+   requirements means manually repointing `JAVA_HOME`.
 
 ## Repo layout
 
