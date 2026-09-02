@@ -213,7 +213,10 @@ more mixins on top of a working foundation, in the order
    settings-toggle pattern as the HUD overlay.
 4. Cosmetics rendering — hook player entity render, draw a cape/hat model
    from a self-hosted asset.
-5. PvP info overlays (reach, hitboxes) — render-layer mixins over entities.
+5. ~~PvP hitbox overlay~~ — done (`HitboxOverlayMixin`, wireframe outline via
+   `ShapeRenderer.renderLineBox`, the same helper vanilla's own F3+B debug
+   view uses internally). Reach indicator not done yet — same category,
+   separate mixin, still open.
 6. Performance mods (render distance culling, particle limits) — higher
    regression risk, do this once more of the above is proven out.
 7. Persisted config file — worth doing now that there are four toggles;

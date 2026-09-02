@@ -44,4 +44,14 @@ public final class GlassClientConfig {
     public static void setShowCps(boolean value) {
         showCps = value;
     }
+
+    private static volatile boolean showHitboxes = true;
+
+    public static boolean showHitboxes() {
+        return showHitboxes;
+    }
+
+    public static void setShowHitboxes(boolean value) {
+        showHitboxes = value;
+    }
 }

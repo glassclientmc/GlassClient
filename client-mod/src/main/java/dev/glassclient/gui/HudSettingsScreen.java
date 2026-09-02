@@ -70,6 +70,15 @@ public class HudSettingsScreen extends Screen {
                 .onValueChange((checkbox, value) -> GlassClientConfig.setShowCps(value))
                 .build()
         );
+        y += ROW_HEIGHT;
+
+        this.addRenderableWidget(
+            Checkbox.builder(Component.literal("Show Hitboxes"), this.font)
+                .pos(x, y)
+                .selected(GlassClientConfig.showHitboxes())
+                .onValueChange((checkbox, value) -> GlassClientConfig.setShowHitboxes(value))
+                .build()
+        );
         y += ROW_HEIGHT + 10;
 
         this.addRenderableWidget(
