@@ -168,11 +168,28 @@ this jar and the matching deobfuscated Minecraft jar when both exist.
 - `src/main/java/dev/glassclient/cosmetic/GlassClientCapeTexture.java` +
   `cosmetic/GlassClientCapeLayer.java` + `mixin/CosmeticCapeMixin.java` —
   the cosmetic cape, texture synthesized in memory (see "Next milestone"
-  below for why, not a bundled asset file) and animated: hue cycles cyan →
-  blue → purple on a triangle wave, re-uploaded to the GPU ~15 times/sec
-  (throttled — the render call can fire multiple times a frame with
-  several players visible, so it doesn't regenerate the texture on every
-  single call).
+  below for why, not a bundled asset file) and animated: background hue
+  cycles cyan → blue → purple on a triangle wave, the logo's glow halo
+  pulses on its own cycle, re-uploaded to the GPU ~15 times/sec (throttled
+  — the render call can fire multiple times a frame with several players
+  visible, so it doesn't regenerate the texture on every single call).
+  Also composites the real GlassClient logo
+  (`cosmetic/cape_logo.png`, bundled as a plain classpath resource, loaded
+  via this class's own ClassLoader — not through Minecraft's
+  ResourceManager, same reasoning as the synthesized background) with a
+  pulsing glow ring, and renders full-bright
+  (`LightTexture.FULL_BRIGHT`) so it stays visible in the dark. **Real
+  bug worth knowing about**: `PlayerCapeModel.createCapeLayer()` bakes its
+  mesh against a texture declared **64x64** (confirmed by reading
+  `LayerDefinition.create(meshDefinition, 64, 64)` directly), not 64x32 —
+  a first version built a 64x32 canvas (the size widely known from
+  classic/legacy cape textures) and the logo simply never appeared, no
+  crash, no error. Worked out the actual visible-panel UV rectangle by
+  reading `ModelPart.Cube`'s real UV-unwrap math rather than guessing: a
+  10x16 sub-region at pixel offset (1,1)-(11,17) or (12,1)-(22,17)
+  depending on which face ends up camera-facing after the model's 180°
+  rotation (not fully resolved from source alone, so the logo is drawn
+  into both — harmless on whichever one isn't shown).
 - `src/main/resources/mixins.glassclient.json` — the mixin config.
 - `libs/` — gitignored. Holds `minecraft-1.21.8-mojmap.jar`, generated
   locally (see below), never committed.
@@ -203,6 +220,22 @@ targets 1.21.8 specifically right now, not whatever the launcher considers
 `<version>`", that's this — pick the newest version that actually has
 `client_mappings` in its piston-meta version JSON, don't assume it's a
 tooling bug.
+
+**Version support doesn't come for free even within the same minor line**:
+tried retargeting everything at 1.21.11 (mappings exist for it too — jar
+generated the same way, sitting in `libs/minecraft-1.21.11-mojmap.jar`,
+just not the active `compileOnly` target). Real compile errors, not a
+tooling hiccup: `RenderType`, `ResourceLocation`, `PlayerModel`,
+`PlayerRenderer`, and `PlayerRenderState` all moved packages or were
+renamed between 1.21.8 and 1.21.11. Reverted to keep the build working.
+Confirms `ARCHITECTURE.md`'s own point that every mixin is written against
+one version's actual internals — even a handful of patch releases apart
+can break several core render classes at once, and there's no shortcut
+around re-verifying each mixin's targets against the new version's real
+structure (the exact process each existing mixin already went through
+once — see the decompiled-source research described throughout this
+file). Worth doing whenever there's a real reason to move off 1.21.8, not
+speculatively.
 
 Also: whichever Fabric Loom version you use needs to actually support the
 target Minecraft version's Java bytecode level — an old Loom's bundled ASM

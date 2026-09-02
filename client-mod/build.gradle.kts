@@ -53,6 +53,16 @@ dependencies {
     // published official mappings for the 26.x line yet, a real external
     // constraint, not a choice. NOT checked in (see .gitignore) — never
     // bundle Mojang's files, per ARCHITECTURE.md's legal notes.
+    //
+    // Tried switching this to 1.21.11 (libs/minecraft-1.21.11-mojmap.jar,
+    // generated the same way — still in libs/, just unused) — real
+    // internal API changes between 1.21.8 and 1.21.11 broke the build:
+    // RenderType, ResourceLocation, PlayerModel, PlayerRenderer, and
+    // PlayerRenderState all moved packages or were renamed. Not a quick
+    // fix — every mixin target needs re-verifying against 1.21.11's actual
+    // current structure, the same research process each 1.21.8 mixin
+    // already went through once. Reverted here to keep the build working;
+    // see client-mod/README.md for the follow-up plan.
     compileOnly(files("libs/minecraft-1.21.8-mojmap.jar"))
 
     // JOML — used for GuiGraphics.pose()'s Matrix3x2fStack (HUD scaling).

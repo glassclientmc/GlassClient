@@ -7,6 +7,7 @@ import net.minecraft.client.model.PlayerCapeModel;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.model.geom.ModelLayers;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
@@ -52,7 +53,10 @@ public class GlassClientCapeLayer extends RenderLayer<PlayerRenderState, PlayerM
         VertexConsumer vertexConsumer = bufferSource.getBuffer(RenderType.entitySolid(GlassClientCapeTexture.LOCATION));
         this.getParentModel().copyPropertiesTo(this.model);
         this.model.setupAnim(playerRenderState);
-        this.model.renderToBuffer(poseStack, vertexConsumer, light, OverlayTexture.NO_OVERLAY);
+        // Full-bright, not the passed-in ambient light — the cape should
+        // read as glowing/lit regardless of whether the wearer is standing
+        // in a dark cave or at night.
+        this.model.renderToBuffer(poseStack, vertexConsumer, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
         poseStack.popPose();
     }
 }
