@@ -168,7 +168,11 @@ this jar and the matching deobfuscated Minecraft jar when both exist.
 - `src/main/java/dev/glassclient/cosmetic/GlassClientCapeTexture.java` +
   `cosmetic/GlassClientCapeLayer.java` + `mixin/CosmeticCapeMixin.java` —
   the cosmetic cape, texture synthesized in memory (see "Next milestone"
-  below for why, not a bundled asset file).
+  below for why, not a bundled asset file) and animated: hue cycles cyan →
+  blue → purple on a triangle wave, re-uploaded to the GPU ~15 times/sec
+  (throttled — the render call can fire multiple times a frame with
+  several players visible, so it doesn't regenerate the texture on every
+  single call).
 - `src/main/resources/mixins.glassclient.json` — the mixin config.
 - `libs/` — gitignored. Holds `minecraft-1.21.8-mojmap.jar`, generated
   locally (see below), never committed.

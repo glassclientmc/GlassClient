@@ -46,7 +46,7 @@ public class GlassClientCapeLayer extends RenderLayer<PlayerRenderState, PlayerM
             return;
         }
 
-        GlassClientCapeTexture.ensureRegistered();
+        GlassClientCapeTexture.update();
 
         poseStack.pushPose();
         VertexConsumer vertexConsumer = bufferSource.getBuffer(RenderType.entitySolid(GlassClientCapeTexture.LOCATION));
