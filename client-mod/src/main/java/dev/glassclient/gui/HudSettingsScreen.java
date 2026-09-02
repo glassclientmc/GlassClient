@@ -19,46 +19,62 @@ public class HudSettingsScreen extends Screen {
         super(Component.literal("GlassClient Settings"));
     }
 
+    // Left margin from the screen edge, not centered — a fixed column of
+    // toggles reads more like a real settings panel than centered floating
+    // checkboxes. Tighter row spacing (18 vs the original 24) and a
+    // shorter checkbox label width both read as "smaller" without risking
+    // scaling the actual interactive widgets (their click bounds are in
+    // unscaled screen space — visually shrinking them via a matrix scale
+    // without also correcting hit-testing would misalign clicks).
+    private static final int LEFT_MARGIN = 20;
+    private static final int ROW_HEIGHT = 18;
+    private static final int TITLE_Y = 16;
+    private static final int FIRST_ROW_Y = TITLE_Y + 24;
+
     @Override
     protected void init() {
-        int centerX = this.width / 2;
-        int top = this.height / 2 - 60;
+        int x = LEFT_MARGIN;
+        int y = FIRST_ROW_Y;
 
         this.addRenderableWidget(
             Checkbox.builder(Component.literal("Show FPS"), this.font)
-                .pos(centerX - 80, top)
+                .pos(x, y)
                 .selected(GlassClientConfig.showFps())
                 .onValueChange((checkbox, value) -> GlassClientConfig.setShowFps(value))
                 .build()
         );
+        y += ROW_HEIGHT;
 
         this.addRenderableWidget(
             Checkbox.builder(Component.literal("Show Coordinates"), this.font)
-                .pos(centerX - 80, top + 24)
+                .pos(x, y)
                 .selected(GlassClientConfig.showCoords())
                 .onValueChange((checkbox, value) -> GlassClientConfig.setShowCoords(value))
                 .build()
         );
+        y += ROW_HEIGHT;
 
         this.addRenderableWidget(
             Checkbox.builder(Component.literal("Show Keystrokes"), this.font)
-                .pos(centerX - 80, top + 48)
+                .pos(x, y)
                 .selected(GlassClientConfig.showKeystrokes())
                 .onValueChange((checkbox, value) -> GlassClientConfig.setShowKeystrokes(value))
                 .build()
         );
+        y += ROW_HEIGHT;
 
         this.addRenderableWidget(
             Checkbox.builder(Component.literal("Show CPS"), this.font)
-                .pos(centerX - 80, top + 72)
+                .pos(x, y)
                 .selected(GlassClientConfig.showCps())
                 .onValueChange((checkbox, value) -> GlassClientConfig.setShowCps(value))
                 .build()
         );
+        y += ROW_HEIGHT + 10;
 
         this.addRenderableWidget(
             Button.builder(Component.literal("Done"), button -> this.onClose())
-                .bounds(centerX - 40, top + 108, 80, 20)
+                .bounds(x, y, 60, 16)
                 .build()
         );
     }
@@ -75,7 +91,7 @@ public class HudSettingsScreen extends Screen {
         // looks close enough for a small toggle screen.
         guiGraphics.fill(0, 0, this.width, this.height, 0xC0101010);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
-        guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 60, 0xFFFFFFFF);
+        guiGraphics.drawString(this.font, this.title, LEFT_MARGIN, TITLE_Y, 0xFFFFFFFF);
     }
 
     @Override
