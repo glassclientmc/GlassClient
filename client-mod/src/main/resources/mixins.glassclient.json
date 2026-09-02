@@ -10,7 +10,9 @@
     "MouseTrackerMixin",
     "KeystrokesOverlayMixin",
     "HitboxOverlayMixin",
-    "CosmeticCapeMixin"
+    "CosmeticCapeMixin",
+    "FullBrightMixin",
+    "NoHurtCamMixin"
   ],
   "mixins": []
 }

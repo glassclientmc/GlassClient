@@ -97,6 +97,24 @@ public class HudSettingsScreen extends Screen {
                 .onValueChange((checkbox, value) -> GlassClientConfig.setShowCosmeticCape(value))
                 .build()
         );
+        y += ROW_HEIGHT;
+
+        this.addRenderableWidget(
+            Checkbox.builder(Component.literal("Full Bright"), this.font)
+                .pos(x, y)
+                .selected(GlassClientConfig.fullBright())
+                .onValueChange((checkbox, value) -> GlassClientConfig.setFullBright(value))
+                .build()
+        );
+        y += ROW_HEIGHT;
+
+        this.addRenderableWidget(
+            Checkbox.builder(Component.literal("No Hurt Cam"), this.font)
+                .pos(x, y)
+                .selected(GlassClientConfig.noHurtCam())
+                .onValueChange((checkbox, value) -> GlassClientConfig.setNoHurtCam(value))
+                .build()
+        );
         y += ROW_HEIGHT + 10;
 
         this.addRenderableWidget(

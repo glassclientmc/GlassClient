@@ -74,4 +74,24 @@ public final class GlassClientConfig {
     public static void setShowCosmeticCape(boolean value) {
         showCosmeticCape = value;
     }
+
+    private static volatile boolean fullBright = false;
+
+    public static boolean fullBright() {
+        return fullBright;
+    }
+
+    public static void setFullBright(boolean value) {
+        fullBright = value;
+    }
+
+    private static volatile boolean noHurtCam = false;
+
+    public static boolean noHurtCam() {
+        return noHurtCam;
+    }
+
+    public static void setNoHurtCam(boolean value) {
+        noHurtCam = value;
+    }
 }

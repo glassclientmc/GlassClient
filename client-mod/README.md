@@ -285,9 +285,18 @@ more mixins on top of a working foundation, in the order
    history/PR discussion on why this is the same "info overlay" category as
    Lunar/Badlion's own reach display, not the reach-hack the project's
    policy rules out.
-6. Performance mods (render distance culling, particle limits) — higher
+6. ~~Full Bright~~ + ~~No Hurt Cam~~ — done, both simple gameplay/visual
+   toggles in the same vein Lunar ships. Full Bright
+   (`FullBrightMixin`) reuses `DimensionSpecialEffects.forceBrightLightmap()`
+   — the exact mechanism vanilla itself uses for always-bright dimensions
+   — rather than fighting `LightTexture`'s shader-based lightmap math
+   directly. No Hurt Cam (`NoHurtCamMixin`) cancels
+   `GameRenderer.bobHurt()`, the method that actually applies the
+   screen-tilt-on-damage effect. Off by default (both change how the game
+   looks/plays more than the pure info overlays do).
+7. Performance mods (render distance culling, particle limits) — higher
    regression risk, do this once more of the above is proven out.
-7. Persisted config file — worth doing now that there are six toggles;
+8. Persisted config file — worth doing now that there are eight toggles;
    `GlassClientConfig` is in-memory only right now (resets each launch).
 
 Not in scope, ever, per [ARCHITECTURE.md](../ARCHITECTURE.md)'s legal/policy
