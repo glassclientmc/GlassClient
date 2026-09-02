@@ -54,4 +54,14 @@ public final class GlassClientConfig {
     public static void setShowHitboxes(boolean value) {
         showHitboxes = value;
     }
+
+    private static volatile boolean showReach = true;
+
+    public static boolean showReach() {
+        return showReach;
+    }
+
+    public static void setShowReach(boolean value) {
+        showReach = value;
+    }
 }

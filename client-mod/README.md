@@ -213,13 +213,17 @@ more mixins on top of a working foundation, in the order
    settings-toggle pattern as the HUD overlay.
 4. Cosmetics rendering — hook player entity render, draw a cape/hat model
    from a self-hosted asset.
-5. ~~PvP hitbox overlay~~ — done (`HitboxOverlayMixin`, wireframe outline via
-   `ShapeRenderer.renderLineBox`, the same helper vanilla's own F3+B debug
-   view uses internally). Reach indicator not done yet — same category,
-   separate mixin, still open.
+5. ~~PvP hitbox overlay + reach indicator~~ — done. Hitboxes via
+   `HitboxOverlayMixin` (wireframe outline via `ShapeRenderer.renderLineBox`,
+   the same helper vanilla's own F3+B debug view uses internally). Reach via
+   `HudOverlayMixin`, reading `Minecraft.hitResult` — a read-only distance
+   display, not an actual reach extension; see the note in the commit
+   history/PR discussion on why this is the same "info overlay" category as
+   Lunar/Badlion's own reach display, not the reach-hack the project's
+   policy rules out.
 6. Performance mods (render distance culling, particle limits) — higher
    regression risk, do this once more of the above is proven out.
-7. Persisted config file — worth doing now that there are four toggles;
+7. Persisted config file — worth doing now that there are six toggles;
    `GlassClientConfig` is in-memory only right now (resets each launch).
 
 Not in scope, ever, per [ARCHITECTURE.md](../ARCHITECTURE.md)'s legal/policy

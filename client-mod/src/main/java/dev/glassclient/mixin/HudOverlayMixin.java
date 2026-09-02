@@ -15,6 +15,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 
 import dev.glassclient.GlassClientConfig;
 
@@ -54,6 +56,12 @@ public class HudOverlayMixin {
                 player.getY(),
                 player.getZ()
             ));
+        }
+
+        HitResult hitResult = mc.hitResult;
+        if (GlassClientConfig.showReach() && hitResult instanceof EntityHitResult entityHit && player != null) {
+            double reach = player.getEyePosition().distanceTo(hitResult.getLocation());
+            lines.add(String.format("Reach: %.2f (%s)", reach, entityHit.getEntity().getType().toShortString()));
         }
 
         if (lines.isEmpty()) {
