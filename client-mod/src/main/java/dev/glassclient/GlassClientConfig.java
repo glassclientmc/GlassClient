@@ -10,6 +10,8 @@ public final class GlassClientConfig {
 
     private static volatile boolean showFps = true;
     private static volatile boolean showCoords = true;
+    private static volatile boolean showKeystrokes = true;
+    private static volatile boolean showCps = true;
 
     public static boolean showFps() {
         return showFps;
@@ -25,5 +27,21 @@ public final class GlassClientConfig {
 
     public static void setShowCoords(boolean value) {
         showCoords = value;
+    }
+
+    public static boolean showKeystrokes() {
+        return showKeystrokes;
+    }
+
+    public static void setShowKeystrokes(boolean value) {
+        showKeystrokes = value;
+    }
+
+    public static boolean showCps() {
+        return showCps;
+    }
+
+    public static void setShowCps(boolean value) {
+        showCps = value;
     }
 }

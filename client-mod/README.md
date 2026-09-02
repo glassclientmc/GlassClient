@@ -207,14 +207,16 @@ more mixins on top of a working foundation, in the order
 
 1. ~~HUD overlay (FPS counter, coordinates)~~ — done, styled like Lunar.
 2. ~~In-game settings screen (Right Shift) to toggle HUD elements~~ — done.
-3. Keystrokes/CPS display — input handling mixin, same styling + settings
-   toggle pattern `HudOverlayMixin`/`HudSettingsScreen` already establish.
+3. ~~Keystrokes/CPS display~~ — done. `GlassClientInputTracker` (static,
+   fed by `KeystrokeTrackerMixin`/`MouseTrackerMixin`) backs a bottom-right
+   WASD + click-speed widget (`KeystrokesOverlayMixin`), same styling and
+   settings-toggle pattern as the HUD overlay.
 4. Cosmetics rendering — hook player entity render, draw a cape/hat model
    from a self-hosted asset.
 5. PvP info overlays (reach, hitboxes) — render-layer mixins over entities.
 6. Performance mods (render distance culling, particle limits) — higher
    regression risk, do this once more of the above is proven out.
-7. Persisted config file — worth doing once there's more than two toggles;
+7. Persisted config file — worth doing now that there are four toggles;
    `GlassClientConfig` is in-memory only right now (resets each launch).
 
 Not in scope, ever, per [ARCHITECTURE.md](../ARCHITECTURE.md)'s legal/policy

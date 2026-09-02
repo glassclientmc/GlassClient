@@ -3,6 +3,12 @@
   "minVersion": "0.8",
   "package": "dev.glassclient.mixin",
   "compatibilityLevel": "JAVA_8",
-  "client": ["HudOverlayMixin", "SettingsKeybindMixin"],
+  "client": [
+    "HudOverlayMixin",
+    "SettingsKeybindMixin",
+    "KeystrokeTrackerMixin",
+    "MouseTrackerMixin",
+    "KeystrokesOverlayMixin"
+  ],
   "mixins": []
 }

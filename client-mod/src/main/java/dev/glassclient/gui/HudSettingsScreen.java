@@ -11,8 +11,7 @@ import dev.glassclient.GlassClientConfig;
 /**
  * GlassClient's mod settings screen — opened via Right Shift (same default
  * key Lunar Client uses), same idea as Lunar's own mod-config GUI: toggle
- * HUD elements on/off, nothing more sophisticated yet since there's only
- * two toggles to expose so far.
+ * HUD elements on/off.
  */
 public class HudSettingsScreen extends Screen {
 
@@ -23,7 +22,7 @@ public class HudSettingsScreen extends Screen {
     @Override
     protected void init() {
         int centerX = this.width / 2;
-        int top = this.height / 2 - 40;
+        int top = this.height / 2 - 60;
 
         this.addRenderableWidget(
             Checkbox.builder(Component.literal("Show FPS"), this.font)
@@ -42,8 +41,24 @@ public class HudSettingsScreen extends Screen {
         );
 
         this.addRenderableWidget(
+            Checkbox.builder(Component.literal("Show Keystrokes"), this.font)
+                .pos(centerX - 80, top + 48)
+                .selected(GlassClientConfig.showKeystrokes())
+                .onValueChange((checkbox, value) -> GlassClientConfig.setShowKeystrokes(value))
+                .build()
+        );
+
+        this.addRenderableWidget(
+            Checkbox.builder(Component.literal("Show CPS"), this.font)
+                .pos(centerX - 80, top + 72)
+                .selected(GlassClientConfig.showCps())
+                .onValueChange((checkbox, value) -> GlassClientConfig.setShowCps(value))
+                .build()
+        );
+
+        this.addRenderableWidget(
             Button.builder(Component.literal("Done"), button -> this.onClose())
-                .bounds(centerX - 40, top + 60, 80, 20)
+                .bounds(centerX - 40, top + 108, 80, 20)
                 .build()
         );
     }
