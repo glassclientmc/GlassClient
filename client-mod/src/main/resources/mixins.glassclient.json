@@ -12,7 +12,9 @@
     "HitboxOverlayMixin",
     "CosmeticCapeMixin",
     "FullBrightMixin",
-    "NoHurtCamMixin"
+    "NoHurtCamMixin",
+    "ZoomMixin",
+    "ZoomSensitivityMixin"
   ],
   "mixins": []
 }

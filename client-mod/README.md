@@ -294,9 +294,31 @@ more mixins on top of a working foundation, in the order
    `GameRenderer.bobHurt()`, the method that actually applies the
    screen-tilt-on-damage effect. Off by default (both change how the game
    looks/plays more than the pure info overlays do).
-7. Performance mods (render distance culling, particle limits) — higher
+7. ~~Zoom~~ — done. Hold C (OptiFine/Lunar's own classic default).
+   `ZoomMixin` divides `GameRenderer.getFov`'s return value and cancels
+   `GameRenderer.bobView` (the walk view-bob) while zoomed;
+   `ZoomSensitivityMixin` scales down the turn deltas passed to
+   `Entity.turn` inside `MouseHandler.turnPlayer` specifically (not
+   `Entity.turn` globally — that's also called for AI-driven mob rotation
+   and scaling it there would be wrong). Went through real, live tuning
+   after actually trying it in-game, not guessed-and-shipped: an initial
+   instant on/off toggle felt choppy; adding linear easing over ~330ms
+   still felt mechanical and too fast; view-bob turned out to be a second,
+   separate cause of "choppy while moving" (a narrow FOV amplifies normal
+   walk-bob a lot); final settings are a ~700ms transition run through a
+   smoothstep curve (`t*t*(3-2t)`, in `GlassClientInputTracker`), sensitivity
+   scaled to 1/25th at full zoom (not 1/10th — still felt too fast).
+   Freelook (decoupled third-person camera orbit) deliberately not
+   attempted yet — it needs precise ordinal-sensitive injection into
+   `Camera.setup()`'s actual positioning math (there are two calls to the
+   3-arg `move` method in that class, and `setRotation` is called four
+   times for different unrelated purposes — mirror-view, sleeping, etc. —
+   so a naive `@ModifyArgs`/`@Inject` without careful ordinal targeting
+   risks quietly breaking normal third-person camera behavior, not just
+   freelook itself). Worth doing with real care, not speculatively.
+8. Performance mods (render distance culling, particle limits) — higher
    regression risk, do this once more of the above is proven out.
-8. Persisted config file — worth doing now that there are eight toggles;
+9. Persisted config file — worth doing now that there are eight toggles;
    `GlassClientConfig` is in-memory only right now (resets each launch).
 
 Not in scope, ever, per [ARCHITECTURE.md](../ARCHITECTURE.md)'s legal/policy
