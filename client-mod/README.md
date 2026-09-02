@@ -160,6 +160,15 @@ this jar and the matching deobfuscated Minecraft jar when both exist.
 - `src/main/java/dev/glassclient/gui/HudSettingsScreen.java` — the actual
   settings screen: checkboxes bound to `GlassClientConfig`. See bug #7
   above for why it doesn't use `Screen.renderBackground()`.
+- `src/main/java/dev/glassclient/GlassClientInputTracker.java` +
+  `mixin/KeystrokeTrackerMixin.java` + `mixin/MouseTrackerMixin.java` +
+  `mixin/KeystrokesOverlayMixin.java` — WASD/CPS widget, bottom-right.
+- `src/main/java/dev/glassclient/mixin/HitboxOverlayMixin.java` — PvP
+  hitbox wireframe outline (`ShapeRenderer.renderLineBox`).
+- `src/main/java/dev/glassclient/cosmetic/GlassClientCapeTexture.java` +
+  `cosmetic/GlassClientCapeLayer.java` + `mixin/CosmeticCapeMixin.java` —
+  the cosmetic cape, texture synthesized in memory (see "Next milestone"
+  below for why, not a bundled asset file).
 - `src/main/resources/mixins.glassclient.json` — the mixin config.
 - `libs/` — gitignored. Holds `minecraft-1.21.8-mojmap.jar`, generated
   locally (see below), never committed.
@@ -211,8 +220,26 @@ more mixins on top of a working foundation, in the order
    fed by `KeystrokeTrackerMixin`/`MouseTrackerMixin`) backs a bottom-right
    WASD + click-speed widget (`KeystrokesOverlayMixin`), same styling and
    settings-toggle pattern as the HUD overlay.
-4. Cosmetics rendering — hook player entity render, draw a cape/hat model
-   from a self-hosted asset.
+4. ~~Cosmetics rendering~~ — done. `GlassClientCapeLayer` (registered into
+   `PlayerRenderer` via `CosmeticCapeMixin`) renders an icy-blue cape on
+   every player, using a texture synthesized in memory at runtime
+   (`GlassClientCapeTexture`) rather than a bundled PNG — this mod isn't a
+   Fabric/Forge mod and never registers a resource pack with Minecraft's
+   `ResourceManager`, so a bundled asset file wouldn't actually resolve via
+   a normal `ResourceLocation` lookup; a manually-built `DynamicTexture`
+   registered directly with `TextureManager` sidesteps that whole
+   pack-injection pipeline. The trickiest real bug: `@Shadow`-ing
+   `addLayer` without extending anything failed at runtime with
+   `InvalidMixinException: @Shadow method addLayer ... was not located in
+   the target class` — `addLayer` is declared on `LivingEntityRenderer`
+   (`PlayerRenderer`'s superclass), and Mixin's `@Shadow` resolution only
+   searches the *exact* target class, not its ancestors (unlike `@Inject`
+   targets, which do resolve across the whole hierarchy). Fixed by having
+   the mixin class actually `extends LivingEntityRenderer<...>` — purely a
+   compile-time shim (Mixin discards the mixin class's own
+   constructor/inheritance before merging into the real `PlayerRenderer`;
+   it's never actually instantiated as written), but it's what makes
+   `addLayer` resolve as a normal inherited method.
 5. ~~PvP hitbox overlay + reach indicator~~ — done. Hitboxes via
    `HitboxOverlayMixin` (wireframe outline via `ShapeRenderer.renderLineBox`,
    the same helper vanilla's own F3+B debug view uses internally). Reach via

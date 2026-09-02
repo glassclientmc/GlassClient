@@ -88,6 +88,15 @@ public class HudSettingsScreen extends Screen {
                 .onValueChange((checkbox, value) -> GlassClientConfig.setShowReach(value))
                 .build()
         );
+        y += ROW_HEIGHT;
+
+        this.addRenderableWidget(
+            Checkbox.builder(Component.literal("Show GlassClient Cape"), this.font)
+                .pos(x, y)
+                .selected(GlassClientConfig.showCosmeticCape())
+                .onValueChange((checkbox, value) -> GlassClientConfig.setShowCosmeticCape(value))
+                .build()
+        );
         y += ROW_HEIGHT + 10;
 
         this.addRenderableWidget(

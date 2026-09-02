@@ -64,4 +64,14 @@ public final class GlassClientConfig {
     public static void setShowReach(boolean value) {
         showReach = value;
     }
+
+    private static volatile boolean showCosmeticCape = true;
+
+    public static boolean showCosmeticCape() {
+        return showCosmeticCape;
+    }
+
+    public static void setShowCosmeticCape(boolean value) {
+        showCosmeticCape = value;
+    }
 }

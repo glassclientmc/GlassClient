@@ -9,7 +9,8 @@
     "KeystrokeTrackerMixin",
     "MouseTrackerMixin",
     "KeystrokesOverlayMixin",
-    "HitboxOverlayMixin"
+    "HitboxOverlayMixin",
+    "CosmeticCapeMixin"
   ],
   "mixins": []
 }
