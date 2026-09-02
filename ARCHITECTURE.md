@@ -77,27 +77,36 @@ Stack: Java 17/21 (matching modern Minecraft), Gradle, SpongePowered Mixin
 (standalone, not via Forge/Fabric — matches your choice to inject the way
 Lunar does).
 
-High-level pipeline (steps 1-2 built and boot cleanly as of 2026-08-29 —
-see [client-mod/README.md](client-mod/README.md) for the working setup and
-the one known blocker: bytecode transformation doesn't actually fire yet):
+High-level pipeline (**the whole thing works end to end as of 2026-09-02**,
+confirmed against real Minecraft 1.21.8 — see
+[client-mod/README.md](client-mod/README.md) for the full writeup,
+including seven real bugs found and fixed along the way):
 1. A Java agent (`-javaagent:glassclient-mod-<version>-all.jar`) attaches
    before Minecraft's main class runs. Since Forge/Fabric's bundled Mixin
    service implementations don't work outside their own managed class
    loading, this needed a custom `IMixinService` + `IGlobalPropertyService`
-   backed by the JVM's own `Instrumentation` API — real, working code now,
-   not a plan.
+   backed by the JVM's own `Instrumentation` API.
 2. `MixinBootstrap.init()` sets up the Mixin environment; we register our
-   `mixins.glassclient.json` config. Confirmed working with zero errors.
+   `mixins.glassclient.json` config, then a small bridge class transitions
+   the environment to the phase Mixin actually needs (see
+   client-mod/README.md bug #1 — this step silently did nothing without it).
 3. Mixins are written against **Mojang's official mappings** (published
-   alongside each release since 1.14.4 — this is what makes it feasible to
-   target vanilla directly without a full deobfuscation pipeline like older
-   clients needed).
+   alongside each release since 1.14.4). One real caveat found in practice:
+   Mojang doesn't always publish them immediately for the newest line — as
+   of writing, 1.21.8 has them and the 26.x line doesn't yet, so client-mod
+   currently targets 1.21.8, not whatever the launcher considers "latest".
+   Also: the mappings alone don't help at runtime, since Mojang's *shipped*
+   jar is still obfuscated — the launcher runs a locally-generated
+   deobfuscated jar in place of it specifically when client-mod is attached
+   (see client-mod/README.md bug #3).
 4. After mixins are registered, we reflectively invoke Minecraft's real
    `main()` — from that point on, our mixed-in code runs as part of the
    normal game loop.
-5. First real milestones, roughly in order of difficulty:
-   - HUD overlay (FPS counter, coordinates) — mixes into the render/HUD
-     class, easiest possible first mixin, good pipeline smoke test.
+5. Feature milestones, roughly in order of difficulty:
+   - ~~HUD overlay (FPS counter, coordinates)~~ — done, styled to match
+     Lunar's own look (small text, semi-transparent box).
+   - ~~In-game settings screen (Right Shift) to toggle HUD elements~~ —
+     done.
    - Keystrokes/CPS display — input handling mixin.
    - Cosmetics rendering — hook into player entity render, draw a cape/hat
      model, backed by our own asset service (not Lunar's).

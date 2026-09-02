@@ -5,6 +5,7 @@ import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
 
 import org.spongepowered.asm.launch.MixinBootstrap;
+import org.spongepowered.asm.mixin.GlassClientEnvironmentBridge;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.Mixins;
 
@@ -15,22 +16,22 @@ import dev.glassclient.mixin.GlassClientMixinService;
  * (set by the launcher's classpath builder). Runs before Minecraft's own
  * main() so our mixins are registered before any target class loads.
  *
- * STATUS (see client-mod/README.md "Known issue" section for the full
- * writeup): everything up through Mixin's bootstrap is proven working —
- * {@link GlassClientMixinService} (a custom IMixinService/IGlobalPropertyService
- * pair, since Forge/Fabric's built-in ones don't work standalone) gets
- * correctly selected via ServiceLoader, MixinBootstrap.init() succeeds with
- * no errors, and this class's ClassFileTransformer correctly receives every
- * loaded class. What's NOT yet working: the actual bytecode transformation
- * never fires — confirmed via debug instrumentation that Mixin never even
- * attempts to resolve the mixin/target classes, despite the config loading
- * without error. Leading suspect: MixinConfig.select() does a reference
- * equality check between environments (`this.env == environment`) that may
- * never hold true when driven by a from-scratch service outside Mixin's
- * usual Forge/Fabric-managed bootstrap sequence. Next step for whoever
- * picks this up: trace MixinProcessor.checkSelect() / MixinConfig.select()
- * against Mixin 0.8.5 source with a debugger attached, rather than guessing
- * further from the outside.
+ * FIXED (see client-mod/README.md for the full writeup, including two dead
+ * ends along the way): the pipeline through Mixin's bootstrap was already
+ * correct — {@link GlassClientMixinService} (a custom IMixinService/
+ * IGlobalPropertyService pair, since Forge/Fabric's built-in ones don't work
+ * standalone) gets correctly selected via ServiceLoader, and
+ * MixinBootstrap.init() succeeds with no errors. Two real bugs combined to
+ * make the actual transform silently do nothing:
+ * 1. The Mixin environment never transitioned from Phase.PREINIT to
+ *    Phase.DEFAULT (MixinConfig.select()'s reference-equality check between
+ *    environments always failed as a result), fixed via
+ *    {@link GlassClientEnvironmentBridge}.
+ * 2. {@link GlassClientMixinService#transform} was passing the JVM-internal
+ *    slash-separated class name straight through to
+ *    IMixinTransformer.transformClassBytes's `transformedName` parameter,
+ *    which Mixin's target matching expects in dotted form — so no mixin
+ *    target string could ever match, independent of bug 1.
  */
 public final class GlassClientAgent {
 
@@ -40,6 +41,7 @@ public final class GlassClientAgent {
         MixinBootstrap.init();
         MixinEnvironment.getCurrentEnvironment().setSide(MixinEnvironment.Side.CLIENT);
         Mixins.addConfiguration("mixins.glassclient.json");
+        GlassClientEnvironmentBridge.gotoDefaultPhase();
 
         GlassClientMixinService service = GlassClientMixinService.INSTANCE;
         if (service == null) {

@@ -78,7 +78,13 @@ public final class GlassClientMixinService
   /** Called by {@link GlassClientAgent}'s ClassFileTransformer for every loaded class. */
   public byte[] transform(String className, byte[] classBytes) {
     if (this.transformer == null) return classBytes;
-    return this.transformer.transformClassBytes(className, className, classBytes);
+    // ClassFileTransformer always hands us the JVM-internal slash-separated
+    // name (e.g. "dev/glassclient/test/Target"), but Mixin's target matching
+    // (against @Mixin(Target.class) / config target strings) expects the
+    // dotted Java class name for `transformedName`. Passing the raw slash
+    // form through unchanged meant no mixin target string could ever match.
+    String dottedName = className.replace('/', '.');
+    return this.transformer.transformClassBytes(dottedName, dottedName, classBytes);
   }
 
   // ---- IMixinService ----
@@ -198,19 +204,28 @@ public final class GlassClientMixinService
     return new URL[0];
   }
 
+  // Class.forName strictly requires dotted names; Mixin internally passes
+  // class names around in slash form (ASM/bytecode convention) and only
+  // sometimes converts before calling out to IClassProvider. Observed this
+  // directly: real Minecraft launch logged "Catching
+  // java.lang.ClassNotFoundException: net/minecraft/client/gui/Gui" — a
+  // slash-form name handed straight to Class.forName, guaranteed to fail
+  // regardless of whether the class exists. Same root cause as the
+  // transform() className fix, different call site.
+
   @Override
   public Class<?> findClass(String name) throws ClassNotFoundException {
-    return Class.forName(name);
+    return Class.forName(name.replace('/', '.'));
   }
 
   @Override
   public Class<?> findClass(String name, boolean initialize) throws ClassNotFoundException {
-    return Class.forName(name, initialize, ClassLoader.getSystemClassLoader());
+    return Class.forName(name.replace('/', '.'), initialize, ClassLoader.getSystemClassLoader());
   }
 
   @Override
   public Class<?> findAgentClass(String name, boolean initialize) throws ClassNotFoundException {
-    return Class.forName(name, initialize, GlassClientMixinService.class.getClassLoader());
+    return Class.forName(name.replace('/', '.'), initialize, GlassClientMixinService.class.getClassLoader());
   }
 
   // ---- IClassBytecodeProvider ----

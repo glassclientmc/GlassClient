@@ -253,6 +253,16 @@
   cursor: pointer;
 }
 
+/* The dropdown popup is rendered natively by the OS, not composited into the
+   app UI — the semi-transparent --glass-highlight background the closed
+   <select> uses has nothing dark behind it there, so it read as
+   near-white with light text on top, nearly invisible. Options need an
+   explicit opaque dark background instead of relying on the glass effect. */
+.version-select option {
+  background: var(--bg-base);
+  color: var(--text);
+}
+
 .version-select:disabled {
   opacity: 0.5;
   cursor: default;

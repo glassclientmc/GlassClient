@@ -6,76 +6,106 @@ genuinely hard, multi-month part of the project.
 
 ## Status
 
-**Builds and boots cleanly. Bytecode transformation doesn't fire yet — see
-"Known issue" below.** This is real, hands-on-verified progress, not a
-draft: JDK 21 + the bundled Gradle wrapper + Shadow (fat-jar) build all work,
-and a from-scratch `-javaagent`-based Mixin bootstrap (no Forge, no Fabric)
-successfully initializes with zero errors. What's still broken is the very
-last step — actual mixin application.
+**The pipeline works end to end, confirmed 2026-09-01/02 against real
+Minecraft.** Two real, working features, both visually confirmed in a
+running game window launched through GlassClient's own launcher:
+
+- `HudOverlayMixin` — FPS counter + coordinates, styled like Lunar
+  Client's own HUD (small scaled-down text on a semi-transparent black
+  box, not plain full-size text floating on nothing).
+- `SettingsKeybindMixin` + `HudSettingsScreen` — Right Shift (Lunar's own
+  default) opens a real in-game settings screen with checkboxes to toggle
+  each HUD element, backed by `GlassClientConfig`.
+
+This is the "First milestone" the project always wanted, actually hit —
+not a draft, not a template.
+
+Getting there took finding and fixing **four separate real bugs**, each
+confirmed via direct evidence (stack traces, bytecode inspection, repeated
+clean builds), not guesswork:
+
+1. **Mixin environment never left `Phase.PREINIT`.** `GlassClientAgent`
+   called `MixinBootstrap.init()` and registered the config, but nothing
+   ever transitioned the environment to `Phase.DEFAULT` — the phase our
+   config's `select()` check needs to match. Forge/Fabric's own launch
+   plugins do this via `MixinBootstrap.inject()`, which is package-private
+   (only callable from inside `org.spongepowered.asm.launch`). Fixed with
+   `GlassClientEnvironmentBridge` — a small class deliberately placed *in
+   that package* (legal: package-private access is checked by package name
+   + classloader, and everything ends up in one classloader once bundled
+   into the shadow jar) that calls the real phase-transition method,
+   `MixinEnvironment.gotoPhase(Phase.DEFAULT)`, directly.
+2. **Class names passed in the wrong format, twice.** `ClassFileTransformer`
+   always hands names in JVM-internal slash form (`dev/glassclient/test/
+   Target`), but Mixin's own target-matching and `Class.forName` both need
+   dotted names. `GlassClientMixinService.transform()` and all three
+   `IClassProvider.findClass` overloads were passing the raw slash-form
+   name straight through. Fixed by normalizing to dots at both call sites.
+3. **Mojang's shipped client jar is obfuscated.** Confirmed via a real
+   `ClassNotFoundException: net/minecraft/client/gui/Gui` at runtime, full
+   stack trace in git history. "Official mappings are published" (true
+   since 1.14.4) does not mean the jar Mojang actually ships uses those
+   names — it's still ProGuard-obfuscated; the mappings are a separate
+   lookup table for tooling. Forge/Fabric solve this with a whole runtime
+   remapping pipeline (SRG/intermediary). We sidestep it: the launcher runs
+   the same deobfuscated jar our mixins are compiled against (see below)
+   in place of the obfuscated one, specifically when client-mod is
+   attached — no remapping layer needed. This is a real, if inelegant,
+   fix; building actual obfuscation-aware remapping (Mixin has a real
+   mechanism for this via refmaps + `ObfuscationServiceMCP`, see the build
+   script) is future work if broader server-anticheat compatibility etc.
+   ever requires the "real" jar specifically.
+4. **`GuiGraphics.drawString`'s color is ARGB, not RGB.** `0xFFFFFF` has a
+   zero alpha byte, and `drawString` silently no-ops when
+   `ARGB.alpha(color) == 0` — confirmed by reading `GuiGraphics.java`'s
+   actual decompiled source. The mixin was genuinely firing the whole time;
+   the text was just being asked to render fully transparent. Fixed by
+   using `0xFFFFFFFF`.
+
+There's also a fifth, build-time-only issue worth knowing about if you add
+more mixins: **the Mixin annotation processor's "Unable to locate
+obfuscation mapping" check is non-deterministic across Gradle daemon
+reuse** — it can silently pass on a "lucky" daemon and hard-fail on a
+fresh one, because it depends on an internal IDE-detection heuristic that
+isn't actually reliable outside a real IDE. Verified deterministic
+pass/fail by running with `--no-daemon` repeatedly. Fixed for real (not
+just "usually") via `-AMSG_NO_OBFDATA_FOR_TARGET=warning` /
+`-AMSG_NO_OBFDATA_FOR_CTOR=warning` in `build.gradle.kts` — Mixin's own
+documented per-message-type severity override. Note: the documented
+`=disabled` value for this flag did *not* actually suppress the hard error
+in testing, for reasons not fully chased down — `=warning` is what's
+actually confirmed to work reliably.
+
+Two more, found building the settings screen on top of the working
+pipeline:
+
+6. **Missing transitive compile dependencies.** GUI code touching
+   `GuiGraphics.pose()` needs JOML (`Matrix3x2fStack`) on the compile
+   classpath; anything touching `Component` transitively needs Brigadier
+   (`Component` implements its `Message` interface). Both are real runtime
+   dependencies the actual game already has — added as `compileOnly` (not
+   bundled into the fat jar, to avoid a duplicate-class conflict with what
+   the game loads itself) once each missing-class compile error pointed at
+   them directly.
+7. **`Screen.renderBackground()` crashed with `IllegalStateException: Can
+   only blur once per frame`.** In 1.21.8, Screen's default background
+   render does a real GPU blur (`GuiGraphics.blurBeforeThisStratum`), and
+   something else in the render pipeline already blurs once that same
+   frame — calling it from a custom screen's `render()` hits Mixin's
+   target correctly and runs, but then genuinely crashes the game (real
+   crash report, not a silent failure). `HudSettingsScreen` draws a plain
+   semi-transparent fill instead — visually close enough, and avoids the
+   conflict entirely.
 
 Run it yourself:
 
 ```bash
 JAVA_HOME="/path/to/jdk-21" ./gradlew shadowJar
-java -javaagent:build/libs/glassclient-mod-0.1.0-all.jar -cp build/libs/glassclient-mod-0.1.0-all.jar YourMainClass
 ```
 
-You'll see:
-
-```
-[HH:MM:SS] [mixin/INFO] SpongePowered MIXIN Subsystem Version=0.8.5 ... Service=GlassClient Env=CLIENT
-[GlassClient] mixins registered, handing off to Minecraft
-```
-
-...and your program runs normally, but any `@Mixin` classes registered in
-`mixins.glassclient.json` won't actually apply yet.
-
-## Known issue: mixin application doesn't fire
-
-Confirmed via debug instrumentation (temporarily added, since removed):
-
-- `MixinBootstrap.init()` succeeds — our custom `GlassClientMixinService`
-  (see below) gets correctly selected via `ServiceLoader`, `offer()` receives
-  the `IMixinTransformerFactory`, and `createTransformer()` succeeds.
-- The `ClassFileTransformer` registered in `GlassClientAgent` correctly
-  receives every class the JVM loads, including a test target class.
-- But `IMixinTransformer.transformClassBytes(name, name, bytes)` returns the
-  bytes completely unchanged — and, critically, **it never calls back into
-  our `IClassProvider.findClass()` or `IClassBytecodeProvider.getClassNode()`
-  at all**, for either the mixin class or its target. That means Mixin isn't
-  even attempting to resolve the mixin — something upstream of that decides
-  there's nothing to do, silently.
-- Tried and ruled out: forcing a PREINIT→DEFAULT phase transition (broke
-  things worse — configs got orphaned in the old phase), moving the mixin
-  between the config's `"client"` and unconditional `"mixins"` arrays (no
-  difference, rules out side-filtering), passing dot-separated vs
-  slash-separated class names to `transformClassBytes` (no difference).
-
-**Leading suspect**, found by reading Mixin 0.8.5's actual source
-(`MixinConfig.select()`):
-
-```java
-this.visited = true;
-return this.env == environment;
-```
-
-`select()` — which is what actually promotes a loaded config into one that
-gets applied — does a **reference-equality** check between the
-`MixinEnvironment` instance captured when the config was registered and
-whatever's "current" later, from `MixinProcessor.checkSelect()`. In a
-Forge/Fabric-managed boot sequence this reference always matches because
-their launch wrapper drives the whole phase lifecycle in a specific order;
-driving Mixin from a bare `-javaagent` with a hand-written service may not
-reproduce whatever sequencing makes that reference check hold true — or the
-issue is elsewhere entirely and this is a red herring. Wasn't confirmed
-either way before time ran out on this investigation session.
-
-**Next step for whoever picks this up**: attach an actual Java debugger
-(not print-statement debugging) to a breakpoint in
-`MixinProcessor.checkSelect()` / `MixinConfig.select()` and step through
-what's happening on the first `transformClassBytes` call. That will settle
-in minutes what took hours to narrow down from the outside. Mixin 0.8.5
-source: https://github.com/SpongePowered/Mixin/tree/0.8.5
+Then launch through GlassClient's own launcher (see `launcher/README` /
+root `README.md`) with 1.21.8 selected — it auto-detects and wires in both
+this jar and the matching deobfuscated Minecraft jar when both exist.
 
 ## What's here
 
@@ -83,16 +113,25 @@ source: https://github.com/SpongePowered/Mixin/tree/0.8.5
   annotation processor, and the **Shadow plugin** (produces
   `glassclient-mod-<version>-all.jar`, a fat jar bundling Mixin/ASM/Gson/
   Guava — required, since a plain jar can't run standalone as a
-  `-javaagent`). A few non-obvious things it does, each commented inline:
+  `-javaagent`). Non-obvious things it does, each commented inline where it
+  happens:
   - Declares Gson/Guava/ASM on **both** `implementation` and
     `annotationProcessor` — Mixin's POM marks them provided/optional rather
     than transitive, so both the AP and the actual runtime classpath crash
     with `NoClassDefFoundError` without this.
-  - `-AdisableTargetValidator=true` — relaxes compile-time member validation
-    for mixin targets (we don't have a Mojang-mapped Minecraft jar yet, see
-    below). Note: this does **not** let you skip having the target class
-    available at compile time entirely — Mixin still needs to resolve the
-    class itself, just not validate every member reference against it.
+  - `compileOnly(files("libs/minecraft-1.21.8-mojmap.jar"))` — the real,
+    deobfuscated Minecraft jar mixins compile against. Not checked in (see
+    below and `.gitignore`).
+  - `-AdisableTargetValidator=true` — turns off the AP's compile-time check
+    that an `@Inject` target's method/signature actually exists (a real
+    tradeoff: wrong method names now only surface as runtime errors, not
+    build failures — cross-check manually against the decompiled sources
+    instead). Needed because that validator wants SRG/notch obfuscation
+    mapping data we don't have and don't need.
+  - `-AMSG_NO_OBFDATA_FOR_TARGET=warning` / `-AMSG_NO_OBFDATA_FOR_CTOR=
+    warning` — see bug #5 above.
+  - `compileOnly("org.joml:joml:1.10.8")` / `compileOnly("com.mojang:
+    brigadier:1.3.10")` — see bug #6 above.
   - `mergeServiceFiles()` — Mixin's own jar ships its own
     `META-INF/services/org.spongepowered.asm.service.IGlobalPropertyService`
     entry; without merging, Shadow's default resource handling can drop our
@@ -105,43 +144,89 @@ source: https://github.com/SpongePowered/Mixin/tree/0.8.5
   custom `IMixinService` + `IGlobalPropertyService` backed by the JVM's
   `Instrumentation` API, since Mixin's bundled implementations (`Blackboard`
   for LaunchWrapper/ModLauncher) reference those frameworks directly in
-  their constructors and throw `NoClassDefFoundError` standalone. This is
-  the piece that took the most work to get right — see the git history for
-  everything that had to be worked around (annotation processor deps, the
-  global property service, compatibility-level limits, etc.).
-- `src/main/java/dev/glassclient/mixin/ExampleHudMixin.java` — a template,
-  not a real mixin, since we don't have a Mojang-mapped Minecraft jar to
-  compile a real one against yet. See the comments in that file.
-- `src/main/resources/mixins.glassclient.json` — the mixin config. Empty
-  `mixins` array until the transform issue above is fixed and a real mixin
-  is added.
+  their constructors and throw `NoClassDefFoundError` standalone.
+- `src/main/java/org/spongepowered/asm/mixin/GlassClientEnvironmentBridge.java`
+  — deliberately lives in Mixin's own package, see bug #1 above.
+- `src/main/java/dev/glassclient/GlassClientConfig.java` — in-memory HUD
+  toggle state (`showFps`, `showCoords`). No persisted config file yet —
+  future work once there's enough toggles to justify one.
+- `src/main/java/dev/glassclient/mixin/HudOverlayMixin.java` — FPS counter
+  + player coordinates, styled like Lunar Client (small scaled text, dark
+  semi-transparent box), injected at the tail of `Gui.render`. Respects
+  `GlassClientConfig`.
+- `src/main/java/dev/glassclient/mixin/SettingsKeybindMixin.java` — opens
+  `HudSettingsScreen` on Right Shift (Lunar's own default), injected at the
+  head of `KeyboardHandler.keyPress`.
+- `src/main/java/dev/glassclient/gui/HudSettingsScreen.java` — the actual
+  settings screen: checkboxes bound to `GlassClientConfig`. See bug #7
+  above for why it doesn't use `Screen.renderBackground()`.
+- `src/main/resources/mixins.glassclient.json` — the mixin config.
+- `libs/` — gitignored. Holds `minecraft-1.21.8-mojmap.jar`, generated
+  locally (see below), never committed.
 
-## Prerequisites to actually build a real Minecraft mixin
+## Getting the Mojang-mapped jar (needed once per Minecraft version)
 
-The Gradle/JDK/service-wiring side is done. What's still missing:
-
-A **Mojang-mapped Minecraft client jar** to compile mixins against — not
-something we can check into the repo (see [ARCHITECTURE.md](../ARCHITECTURE.md)
+Not something to check into the repo (see [ARCHITECTURE.md](../ARCHITECTURE.md)
 legal notes: never bundle Mojang's files). The practical way to get one:
-temporarily create a throwaway Fabric mod project with
-[Fabric Loom](https://fabricmc.net/wiki/tutorial:setup), run its
-`genSources`/dev-jar tasks to get a Mojang-mapped, deobfuscated client jar
-out of Loom's cache, then copy that jar into
-`client-mod/libs/minecraft-<version>-mojmap.jar` and point
-`build.gradle.kts`'s commented-out `compileOnly` line at it. You are only
-borrowing Loom's remapping pipeline here — the actual GlassClient runtime
-never uses Fabric loader. This only has to happen once per Minecraft version
-targeted.
 
-## First milestone
+1. Temporarily scaffold a throwaway [Fabric Loom](https://fabricmc.net/wiki/tutorial:setup)
+   Gradle project (`fabric-loom` plugin, `minecraft("com.mojang:minecraft:
+   <version>")`, `mappings(loom.officialMojangMappings())`, a
+   `fabric-loader` dependency just to satisfy Loom's project model).
+2. Run `./gradlew genSourcesWithVineflower`.
+3. Find the merged, remapped jar in Loom's global cache:
+   `~/.gradle/caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-
+   merged/<version>-<mappings-id>/minecraft-merged-<version>-<mappings-id>.jar`
+4. Copy it to `client-mod/libs/minecraft-<version>-mojmap.jar`.
+5. Delete the throwaway project — you're only borrowing Loom's remapping
+   pipeline; GlassClient's own runtime never uses Fabric loader.
 
-1. Fix the transform-doesn't-fire issue above (a debugger session, not more
-   guessing, is the fastest path).
-2. Once that works against the throwaway test setup (any plain Java class,
-   no Minecraft needed to prove the pipeline), get the Mojang-mapped jar per
-   above and write a real `ExampleHudMixin` targeting Minecraft's actual HUD
-   render class, injecting one debug log line.
-3. See it print once per frame when real Minecraft is launched with the
-   agent attached. That's the whole pipeline proven end to end — every
-   feature mod after that is "just" more mixins on top of a working
-   pipeline.
+**Important version caveat**: Mojang doesn't always publish official
+mappings (`client_mappings`) immediately for a new release — checked
+directly against `piston-meta`, neither 26.2 nor 26.1.2 (the launcher's
+current "latest") have them yet, while 1.21.8 does. That's why client-mod
+targets 1.21.8 specifically right now, not whatever the launcher considers
+"latest". If Loom fails with "Failed to find official mojang mappings for
+`<version>`", that's this — pick the newest version that actually has
+`client_mappings` in its piston-meta version JSON, don't assume it's a
+tooling bug.
+
+Also: whichever Fabric Loom version you use needs to actually support the
+target Minecraft version's Java bytecode level — an old Loom's bundled ASM
+choked with "Unsupported class file major version 69" (Java 25's class
+file format) against 26.2 during this investigation; a current Loom
+version (1.18.0-alpha.19 at the time) handled it fine. Loom itself may also
+need to run under a newer JDK than the Minecraft version's own toolchain
+requires.
+
+## Next milestone: more real feature mixins
+
+The pipeline is proven. Every feature after `HudOverlayMixin` is "just"
+more mixins on top of a working foundation, in the order
+[ARCHITECTURE.md](../ARCHITECTURE.md) lays out:
+
+1. ~~HUD overlay (FPS counter, coordinates)~~ — done, styled like Lunar.
+2. ~~In-game settings screen (Right Shift) to toggle HUD elements~~ — done.
+3. Keystrokes/CPS display — input handling mixin, same styling + settings
+   toggle pattern `HudOverlayMixin`/`HudSettingsScreen` already establish.
+4. Cosmetics rendering — hook player entity render, draw a cape/hat model
+   from a self-hosted asset.
+5. PvP info overlays (reach, hitboxes) — render-layer mixins over entities.
+6. Performance mods (render distance culling, particle limits) — higher
+   regression risk, do this once more of the above is proven out.
+7. Persisted config file — worth doing once there's more than two toggles;
+   `GlassClientConfig` is in-memory only right now (resets each launch).
+
+Not in scope, ever, per [ARCHITECTURE.md](../ARCHITECTURE.md)'s legal/policy
+notes: reach/killaura-style automation or anything else that violates
+Minecraft's usage guidelines. HUD overlays and cosmetics are the same
+category Lunar/Badlion already ship and are broadly accepted.
+
+**A note on scope**: "all of Lunar's features" is hundreds of individual
+mods built by a full engineering team over years — this remains, honestly,
+a multi-month effort one mixin at a time, not something that lands in a
+single session. What's real as of this writeup: a genuinely working
+pipeline, one real HUD feature styled to match Lunar, and a real in-game
+settings screen to control it — each bug found and fixed with actual
+evidence (stack traces, decompiled source, repeated clean builds, a real
+crash report) rather than assumed away.

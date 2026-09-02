@@ -3,7 +3,6 @@
   "minVersion": "0.8",
   "package": "dev.glassclient.mixin",
   "compatibilityLevel": "JAVA_8",
-  "refmap": "mixins.glassclient.refmap.json",
-  "client": [],
+  "client": ["HudOverlayMixin", "SettingsKeybindMixin"],
   "mixins": []
 }

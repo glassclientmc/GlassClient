@@ -1,0 +1,29 @@
+package dev.glassclient;
+
+/**
+ * In-memory only for now (resets each launch) — a real persisted config
+ * file is future work once there's more than two toggles to justify it.
+ */
+public final class GlassClientConfig {
+
+    private GlassClientConfig() {}
+
+    private static volatile boolean showFps = true;
+    private static volatile boolean showCoords = true;
+
+    public static boolean showFps() {
+        return showFps;
+    }
+
+    public static void setShowFps(boolean value) {
+        showFps = value;
+    }
+
+    public static boolean showCoords() {
+        return showCoords;
+    }
+
+    public static void setShowCoords(boolean value) {
+        showCoords = value;
+    }
+}

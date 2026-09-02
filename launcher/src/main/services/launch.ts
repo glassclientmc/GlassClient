@@ -20,6 +20,14 @@ export interface LaunchOptions {
   gameDir: string
   javaPath: string
   maxMemoryMb: number
+  /**
+   * Path to glassclient-mod-<version>-all.jar. When set, attaches it as a
+   * `-javaagent` so client-mod's mixins actually load into the game —
+   * without this the launcher only ever runs vanilla Minecraft. Optional
+   * since client-mod is still an early, single-version (1.21.8) feature
+   * set, not something to force on every launch yet.
+   */
+  modJarPath?: string
 }
 
 /**
@@ -39,7 +47,10 @@ export function buildLaunchArgs(
   const classpathSeparator = process.platform === 'win32' ? ';' : ':'
   const classpath = [...files.libraryPaths, files.clientJarPath].join(classpathSeparator)
 
+  const jvmArgs = options.modJarPath ? [`-javaagent:${options.modJarPath}`] : []
+
   return [
+    ...jvmArgs,
     `-Xmx${options.maxMemoryMb}M`,
     '-cp',
     classpath,

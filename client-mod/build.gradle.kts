@@ -46,21 +46,76 @@ dependencies {
     annotationProcessor("org.ow2.asm:asm-util:9.7")
     annotationProcessor("org.ow2.asm:asm-analysis:9.7")
 
-    // NOT checked in. You need a copy of the Minecraft client jar, remapped
-    // to Mojang's official (non-obfuscated) mappings, to compile mixins
-    // against. See client-mod/README.md for how to obtain one. Drop it at
-    // client-mod/libs/minecraft-<version>-mojmap.jar and uncomment:
-    // compileOnly(files("libs/minecraft-<version>-mojmap.jar"))
+    // Mojang-mapped, deobfuscated client jar, obtained by temporarily
+    // borrowing a throwaway Fabric Loom project's remapping pipeline (see
+    // client-mod/README.md). Targets 1.21.8, not whatever's currently
+    // "latest" in the launcher (26.2 as of writing) — Mojang hasn't
+    // published official mappings for the 26.x line yet, a real external
+    // constraint, not a choice. NOT checked in (see .gitignore) — never
+    // bundle Mojang's files, per ARCHITECTURE.md's legal notes.
+    compileOnly(files("libs/minecraft-1.21.8-mojmap.jar"))
+
+    // JOML — used for GuiGraphics.pose()'s Matrix3x2fStack (HUD scaling).
+    // compileOnly, not implementation/shadowed: the real game already has
+    // this exact version on its own classpath at runtime (confirmed against
+    // the launcher's downloaded libraries), so bundling our own copy into
+    // the fat jar would just risk a duplicate-class conflict for no reason.
+    compileOnly("org.joml:joml:1.10.8")
+
+    // Brigadier — Component implements its Message interface, so anything
+    // touching Component (Screen/GUI code) transitively needs it on the
+    // compile classpath. Same compileOnly reasoning as JOML above.
+    compileOnly("com.mojang:brigadier:1.3.10")
 }
 
 tasks.withType<JavaCompile> {
     options.compilerArgs.addAll(
         listOf(
-            "-AoutRefMapFile=${layout.buildDirectory.file("resources/main/mixins.glassclient.refmap.json").get().asFile}",
-            // We don't have a compile-time Minecraft jar yet (see README), so
-            // mixin targets are plain strings the AP can't resolve. Without
-            // this, compilation fails on every @Mixin(targets = "...").
-            "-AdisableTargetValidator=true"
+            // No -AoutRefMapFile, and mixins.glassclient.json has no "refmap"
+            // entry: refmaps exist to remap identifiers between a dev
+            // environment's clean names and production's obfuscated ones
+            // (the Forge/Fabric use case). We ship a fat jar compiled
+            // directly against real Mojang-named classes with no obfuscation
+            // layer at runtime, so there's nothing to remap — Mixin just
+            // uses each @Inject's raw method-name string directly against
+            // the real target class, which matches exactly since it's not
+            // obfuscated. Requesting a refmap anyway is what caused a hard,
+            // inconsistent "Unable to locate obfuscation mapping" compile
+            // error (see git history) — the AP tried to look up SRG/searge
+            // cross-references we don't have and don't need, via
+            // ObfuscationServiceMCP, a service Mixin's own jar bundles and
+            // the AP auto-discovers via ServiceLoader regardless of whether
+            // we asked for it.
+            "-AdisableTargetValidator=true",
+            // Real tradeoff of this flag: turns off the AP's compile-time
+            // check that an @Inject's target method/signature actually
+            // exists, so a typo'd method name now only surfaces as a
+            // runtime Mixin error instead of a build failure. Manually
+            // cross-checked each target against the decompiled
+            // libs/minecraft-1.21.8-mojmap.jar sources to compensate — see
+            // each mixin's own comments.
+
+            // -AdisableTargetValidator does NOT touch this one — it's a
+            // separate check (AnnotatedMixinElementHandlerInjector) that
+            // fires unconditionally whenever zero obfuscation environments
+            // are registered, which is always, since we never configure any
+            // SRG/notch mapping file. Confirmed with --no-daemon (removes
+            // Gradle daemon-reuse noise) that this is a HARD, deterministic
+            // compile error otherwise — an earlier "it built fine" was a
+            // false negative from a stale reused daemon coincidentally
+            // tripping Mixin's own IDE-detection quench, not a real fix.
+            // MessageType's own documented -AMSG_<NAME>=<kind> mechanism
+            // (see IMessagerEx.MessageType.applyOptions in Mixin's source)
+            // is the sanctioned way to control this specific check's
+            // severity. Note: the documented "disabled" value did NOT
+            // actually prevent the hard compile error in practice (verified
+            // with --no-daemon across multiple clean runs — worth
+            // investigating further if picked back up, may be a Mixin AP
+            // bug) — downgrading to "warning" is what's actually confirmed
+            // deterministic, and is an accurate description anyway: this
+            // really is a "worth knowing" note, not nothing.
+            "-AMSG_NO_OBFDATA_FOR_TARGET=warning",
+            "-AMSG_NO_OBFDATA_FOR_CTOR=warning"
         )
     )
 }
