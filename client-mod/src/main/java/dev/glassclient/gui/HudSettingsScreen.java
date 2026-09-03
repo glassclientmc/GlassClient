@@ -91,6 +91,15 @@ public class HudSettingsScreen extends Screen {
         y += ROW_HEIGHT;
 
         this.addRenderableWidget(
+            Checkbox.builder(Component.literal("Show Saturation"), this.font)
+                .pos(x, y)
+                .selected(GlassClientConfig.showSaturation())
+                .onValueChange((checkbox, value) -> GlassClientConfig.setShowSaturation(value))
+                .build()
+        );
+        y += ROW_HEIGHT;
+
+        this.addRenderableWidget(
             Checkbox.builder(Component.literal("Show GlassClient Cape"), this.font)
                 .pos(x, y)
                 .selected(GlassClientConfig.showCosmeticCape())

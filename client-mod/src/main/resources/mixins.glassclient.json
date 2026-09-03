@@ -14,7 +14,8 @@
     "FullBrightMixin",
     "NoHurtCamMixin",
     "ZoomMixin",
-    "ZoomSensitivityMixin"
+    "ZoomSensitivityMixin",
+    "SaturationOverlayMixin"
   ],
   "mixins": []
 }

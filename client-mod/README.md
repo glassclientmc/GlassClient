@@ -286,14 +286,22 @@ more mixins on top of a working foundation, in the order
    Lunar/Badlion's own reach display, not the reach-hack the project's
    policy rules out.
 6. ~~Full Bright~~ + ~~No Hurt Cam~~ — done, both simple gameplay/visual
-   toggles in the same vein Lunar ships. Full Bright
-   (`FullBrightMixin`) reuses `DimensionSpecialEffects.forceBrightLightmap()`
-   — the exact mechanism vanilla itself uses for always-bright dimensions
-   — rather than fighting `LightTexture`'s shader-based lightmap math
-   directly. No Hurt Cam (`NoHurtCamMixin`) cancels
-   `GameRenderer.bobHurt()`, the method that actually applies the
+   toggles in the same vein Lunar ships. No Hurt Cam (`NoHurtCamMixin`)
+   cancels `GameRenderer.bobHurt()`, the method that actually applies the
    screen-tilt-on-damage effect. Off by default (both change how the game
    looks/plays more than the pure info overlays do).
+   Full Bright (`FullBrightMixin`) went through a real revision: the first
+   version reused `DimensionSpecialEffects.forceBrightLightmap()` (the
+   mechanism vanilla itself uses for always-bright dimensions) — compiled
+   and ran fine, but looked wrong once actually tried in-game. Replaced
+   with a `@Redirect` on `LightTexture.updateLightTexture()`'s call to
+   `OptionInstance.get()`, overriding gamma to 1000 (matching Lunar's own
+   stated approach) specifically when the redirected instance really is
+   the gamma option (checked by reference against `Minecraft.getInstance()
+   .options.gamma()` — that same method is also called for
+   `darknessEffectScale()` within the same method body, so the redirect
+   can't just blindly override every call it intercepts). Confirmed
+   working after the fix.
 7. ~~Zoom~~ — done. Hold C (OptiFine/Lunar's own classic default).
    `ZoomMixin` divides `GameRenderer.getFov`'s return value and cancels
    `GameRenderer.bobView` (the walk view-bob) while zoomed;
@@ -316,10 +324,36 @@ more mixins on top of a working foundation, in the order
    so a naive `@ModifyArgs`/`@Inject` without careful ordinal targeting
    risks quietly breaking normal third-person camera behavior, not just
    freelook itself). Worth doing with real care, not speculatively.
-8. Performance mods (render distance culling, particle limits) — higher
+   Already verified via actual bytecode inspection (`javap -c` against the
+   real mojmap jar, not just reading source) that `move(FFF)` ordinal 0 is
+   the correct third-person zoom-out call — that groundwork carries over
+   whenever this gets picked back up.
+8. **In progress, not confirmed correct**: saturation display
+   (`SaturationOverlayMixin` + `GlassClientHungerIconMask`) — a gold
+   outline traced onto the real hunger icons' actual silhouette (read from
+   the game's own shipped texture at `textures/gui/sprites/hud/food_full.png`,
+   not `textures/hud/food_full.png` as first guessed — GUI sprites live
+   under `gui/sprites/`). Confirmed the outline-shape and gain/depletion
+   animation are visually right (icon fills right-side-first, eases
+   smoothly rather than snapping instantly — depletion at 3 units/sec,
+   gains at 10 units/sec, both tuned live). **Not resolved**: whether the
+   underlying 1-saturation-unit-per-icon scale is actually correct.
+   `FoodData.add()` (confirmed by reading the real source) clamps
+   saturation to `[0, foodLevel]`, so a real max of 20 is achievable,
+   which — at this mod's current 1-unit-per-icon scale — shows as "fully
+   outlined." Reported as not matching observed real Lunar Client behavior
+   ("never once was my saturation full" there), but the specific example
+   this scale was built from (5.5 saturation = 5 full icons + 1 half) came
+   from direct user description, not an independently-verified Lunar
+   screenshot — the two pieces of feedback conflict, and it wasn't
+   resolved which one reflects Lunar's actual behavior before moving on.
+   Debug logging (raw vs. displayed value, printed on every real change)
+   is currently still active in `SaturationOverlayMixin` to gather real
+   data next time this is picked up — remove it once resolved.
+9. Performance mods (render distance culling, particle limits) — higher
    regression risk, do this once more of the above is proven out.
-9. Persisted config file — worth doing now that there are eight toggles;
-   `GlassClientConfig` is in-memory only right now (resets each launch).
+10. Persisted config file — worth doing now that there are eight toggles;
+    `GlassClientConfig` is in-memory only right now (resets each launch).
 
 Not in scope, ever, per [ARCHITECTURE.md](../ARCHITECTURE.md)'s legal/policy
 notes: reach/killaura-style automation or anything else that violates

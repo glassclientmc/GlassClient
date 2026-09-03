@@ -94,4 +94,14 @@ public final class GlassClientConfig {
     public static void setNoHurtCam(boolean value) {
         noHurtCam = value;
     }
+
+    private static volatile boolean showSaturation = true;
+
+    public static boolean showSaturation() {
+        return showSaturation;
+    }
+
+    public static void setShowSaturation(boolean value) {
+        showSaturation = value;
+    }
 }
